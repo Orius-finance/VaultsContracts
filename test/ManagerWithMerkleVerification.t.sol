@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.21;
 
 import {BoringVault} from "src/base/BoringVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";

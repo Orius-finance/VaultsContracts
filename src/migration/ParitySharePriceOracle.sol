@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.21;
 
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";

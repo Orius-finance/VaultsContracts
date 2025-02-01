@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.21;
 
 import {Auth, Authority} from "@solmate/auth/Auth.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";

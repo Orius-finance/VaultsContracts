@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.21;
 
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {BoringVault, ERC20} from "src/base/BoringVault.sol";

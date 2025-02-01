@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.21;
+pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
