@@ -17,6 +17,7 @@ remappings = [
     "@openzeppelin/=lib/openzeppelin-contracts/",
     "@ccip=lib/ccip/",
     "@oapp-auth=lib/OAppAuth/src/",
+    "@solmate=lib/solmate/src/"
 ]
 
 
