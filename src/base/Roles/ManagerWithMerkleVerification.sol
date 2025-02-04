@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {MerkleProofLib} from "@solmate/utils/MerkleProofLib.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -20,7 +20,7 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
     // ========================================= STATE =========================================
 
     /**
-     * @notice A merkle tree root that restricts what data can be passed to the BoringVault.
+     * @notice A merkle tree root that restricts what data can be passed to the OriusVault.
      * @dev Maps a strategist address to their specific merkle root.
      * @dev Each leaf is composed of the keccak256 hash of abi.encodePacked {decodersAndSanitizer, target, valueIsNonZero, selector, argumentAddress_0, ...., argumentAddress_N}
      *      Where:
@@ -59,23 +59,23 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
     error ManagerWithMerkleVerification__BadFlashLoanIntentHash();
     error ManagerWithMerkleVerification__FailedToVerifyManageProof(address target, bytes targetData, uint256 value);
     error ManagerWithMerkleVerification__Paused();
-    error ManagerWithMerkleVerification__OnlyCallableByBoringVault();
+    error ManagerWithMerkleVerification__OnlyCallableByOriusVault();
     error ManagerWithMerkleVerification__OnlyCallableByBalancerVault();
     error ManagerWithMerkleVerification__TotalSupplyMustRemainConstantDuringPlatform();
 
     //============================== EVENTS ===============================
 
     event ManageRootUpdated(address indexed strategist, bytes32 oldRoot, bytes32 newRoot);
-    event BoringVaultManaged(uint256 callsMade);
+    event OriusVaultManaged(uint256 callsMade);
     event Paused();
     event Unpaused();
 
     //============================== IMMUTABLES ===============================
 
     /**
-     * @notice The BoringVault this contract can manage.
+     * @notice The OriusVault this contract can manage.
      */
-    BoringVault public immutable vault;
+    OriusVault public immutable vault;
 
     /**
      * @notice The balancer vault this contract can use for flash loans.
@@ -83,7 +83,7 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
     BalancerVault public immutable balancerVault;
 
     constructor(address _owner, address _vault, address _balancerVault) Auth(_owner, Authority(address(0))) {
-        vault = BoringVault(payable(_vault));
+        vault = OriusVault(payable(_vault));
         balancerVault = BalancerVault(_balancerVault);
     }
 
@@ -120,7 +120,7 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
     // ========================================= STRATEGIST FUNCTIONS =========================================
 
     /**
-     * @notice Allows strategist to manage the BoringVault.
+     * @notice Allows strategist to manage the OriusVault.
      * @dev The strategist must provide a merkle proof for every call that verifiees they are allowed to make that call.
      * @dev Callable by MANAGER_INTERNAL_ROLE.
      * @dev Callable by STRATEGIST_ROLE.
@@ -154,7 +154,7 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
         if (totalSupply != vault.totalSupply()) {
             revert ManagerWithMerkleVerification__TotalSupplyMustRemainConstantDuringPlatform();
         }
-        emit BoringVaultManaged(targetsLength);
+        emit OriusVaultManaged(targetsLength);
     }
 
     // ========================================= FLASH LOAN FUNCTIONS =========================================
@@ -171,7 +171,7 @@ contract ManagerWithMerkleVerification is Auth, IPausable {
         uint256[] calldata amounts,
         bytes calldata userData
     ) external {
-        if (msg.sender != address(vault)) revert ManagerWithMerkleVerification__OnlyCallableByBoringVault();
+        if (msg.sender != address(vault)) revert ManagerWithMerkleVerification__OnlyCallableByOriusVault();
 
         flashLoanIntentHash = keccak256(userData);
         performingFlashLoan = true;

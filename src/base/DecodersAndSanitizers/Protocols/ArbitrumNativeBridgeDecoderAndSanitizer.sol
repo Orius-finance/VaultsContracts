@@ -22,7 +22,7 @@ abstract contract ArbitrumNativeBridgeDecoderAndSanitizer is BaseDecoderAndSanit
     //============================== BRIDGING NATIVE ETH ===============================
 
     /// @notice This function will not be added to the merkle tree, as it will
-    /// transfer ETH to the BoringVault's aliased address on Arbitrum.
+    /// transfer ETH to the OriusVault's aliased address on Arbitrum.
     /// Money can be retrieved from this aliased address, but to limit the amount of money going
     /// to this aliased address, if ETH needs to be bridged,
     /// @notice It is left here in case the Arbitrum bridge contracts are upgraded to remove the Alias feature.

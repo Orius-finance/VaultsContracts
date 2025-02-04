@@ -7,11 +7,11 @@ import {PancakeSwapV3DecoderAndSanitizer} from
 
 contract PancakeSwapV3FullDecoderAndSanitizer is PancakeSwapV3DecoderAndSanitizer {
     constructor(
-        address _boringVault,
+        address _oriusVault,
         address _pancakeSwapV3NonFungiblePositionManager,
         address _pancakeSwapV3MasterChef
     )
-        BaseDecoderAndSanitizer(_boringVault)
+        BaseDecoderAndSanitizer(_oriusVault)
         PancakeSwapV3DecoderAndSanitizer(_pancakeSwapV3NonFungiblePositionManager, _pancakeSwapV3MasterChef)
     {}
 }

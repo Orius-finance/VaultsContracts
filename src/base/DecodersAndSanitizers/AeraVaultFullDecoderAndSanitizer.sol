@@ -5,5 +5,5 @@ import {BaseDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/BaseDecode
 import {AeraVaultDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Protocols/AeraVaultDecoderAndSanitizer.sol";
 
 contract AeraVaultFullDecoderAndSanitizer is AeraVaultDecoderAndSanitizer {
-    constructor(address _boringVault) AeraVaultDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) AeraVaultDecoderAndSanitizer(_oriusVault) {}
 }

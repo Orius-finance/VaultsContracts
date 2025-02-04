@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -44,37 +44,37 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -95,7 +95,7 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -106,12 +106,12 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testBalancerV2AndAuraIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
         bytes32 poolId = 0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112;
         // Make sure the vault can
         // swap wETH -> rETH
@@ -136,8 +136,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         leafs[leafIndex].argumentAddresses[0] = getAddress(sourceChain, "rETH_wETH");
         leafs[leafIndex].argumentAddresses[1] = getAddress(sourceChain, "WETH");
         leafs[leafIndex].argumentAddresses[2] = getAddress(sourceChain, "RETH");
-        leafs[leafIndex].argumentAddresses[3] = address(boringVault);
-        leafs[leafIndex].argumentAddresses[4] = address(boringVault);
+        leafs[leafIndex].argumentAddresses[3] = address(oriusVault);
+        leafs[leafIndex].argumentAddresses[4] = address(oriusVault);
         _addAuraLeafs(leafs, getAddress(sourceChain, "aura_reth_weth"));
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
@@ -183,9 +183,9 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             userData: hex""
         });
         DecoderCustomTypes.FundManagement memory funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: false,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: false
         });
         targetData[1] = abi.encodeWithSelector(BalancerV2DecoderAndSanitizer.swap.selector, singleSwap, funds, 0);
@@ -205,21 +205,21 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[3] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.joinPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             joinRequest
         );
         targetData[4] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "rETH_wETH_gauge"), type(uint256).max
         );
-        targetData[5] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(boringVault));
-        targetData[6] = abi.encodeWithSignature("withdraw(uint256)", 203690537881715311640, address(boringVault));
+        targetData[5] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(oriusVault));
+        targetData[6] = abi.encodeWithSignature("withdraw(uint256)", 203690537881715311640, address(oriusVault));
         targetData[7] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "aura_reth_weth"), type(uint256).max
         );
-        targetData[8] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(boringVault));
+        targetData[8] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(oriusVault));
         targetData[9] = abi.encodeWithSignature(
-            "withdraw(uint256,address,address)", 203690537881715311640, address(boringVault), address(boringVault)
+            "withdraw(uint256,address,address)", 203690537881715311640, address(oriusVault), address(oriusVault)
         );
         DecoderCustomTypes.ExitPoolRequest memory exitRequest = DecoderCustomTypes.ExitPoolRequest({
             assets: new address[](2),
@@ -233,8 +233,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[10] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.exitPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             exitRequest
         );
         address[] memory decodersAndSanitizers = new address[](11);
@@ -264,7 +264,7 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targets[1] = getAddress(sourceChain, "aura_reth_weth");
         targetData = new bytes[](2);
         targetData[0] = abi.encodeWithSignature("mint(address)", getAddress(sourceChain, "rETH_wETH_gauge"));
-        targetData[1] = abi.encodeWithSignature("getReward(address,bool)", address(boringVault), true);
+        targetData[1] = abi.encodeWithSignature("getReward(address,bool)", address(oriusVault), true);
         decodersAndSanitizers = new address[](2);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
         decodersAndSanitizers[1] = rawDataDecoderAndSanitizer;
@@ -274,7 +274,7 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testBalancerV2IntegrationReverts() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
         bytes32 poolId = 0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112;
         // Make sure the vault can
         // swap wETH -> rETH
@@ -299,8 +299,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         leafs[leafIndex].argumentAddresses[0] = getAddress(sourceChain, "rETH_wETH");
         leafs[leafIndex].argumentAddresses[1] = getAddress(sourceChain, "WETH");
         leafs[leafIndex].argumentAddresses[2] = getAddress(sourceChain, "RETH");
-        leafs[leafIndex].argumentAddresses[3] = address(boringVault);
-        leafs[leafIndex].argumentAddresses[4] = address(boringVault);
+        leafs[leafIndex].argumentAddresses[3] = address(oriusVault);
+        leafs[leafIndex].argumentAddresses[4] = address(oriusVault);
         _addAuraLeafs(leafs, getAddress(sourceChain, "aura_reth_weth"));
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
@@ -347,9 +347,9 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             userData: hex"DEAD"
         });
         DecoderCustomTypes.FundManagement memory funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: false,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: false
         });
         targetData[1] = abi.encodeWithSelector(BalancerV2DecoderAndSanitizer.swap.selector, singleSwap, funds, 0);
@@ -369,21 +369,21 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[3] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.joinPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             joinRequest
         );
         targetData[4] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "rETH_wETH_gauge"), type(uint256).max
         );
-        targetData[5] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(boringVault));
-        targetData[6] = abi.encodeWithSignature("withdraw(uint256)", 203690537881715311640, address(boringVault));
+        targetData[5] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(oriusVault));
+        targetData[6] = abi.encodeWithSignature("withdraw(uint256)", 203690537881715311640, address(oriusVault));
         targetData[7] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "aura_reth_weth"), type(uint256).max
         );
-        targetData[8] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(boringVault));
+        targetData[8] = abi.encodeWithSignature("deposit(uint256,address)", 203690537881715311640, address(oriusVault));
         targetData[9] = abi.encodeWithSignature(
-            "withdraw(uint256,address,address)", 203690537881715311640, address(boringVault), address(boringVault)
+            "withdraw(uint256,address,address)", 203690537881715311640, address(oriusVault), address(oriusVault)
         );
         DecoderCustomTypes.ExitPoolRequest memory exitRequest = DecoderCustomTypes.ExitPoolRequest({
             assets: new address[](2),
@@ -397,8 +397,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[10] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.exitPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             exitRequest
         );
         address[] memory decodersAndSanitizers = new address[](11);
@@ -433,9 +433,9 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             userData: hex""
         });
         funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: true,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: false
         });
         targetData[1] = abi.encodeWithSelector(BalancerV2DecoderAndSanitizer.swap.selector, singleSwap, funds, 0);
@@ -459,9 +459,9 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             userData: hex""
         });
         funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: false,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: true
         });
         targetData[1] = abi.encodeWithSelector(BalancerV2DecoderAndSanitizer.swap.selector, singleSwap, funds, 0);
@@ -485,9 +485,9 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
             userData: hex""
         });
         funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: false,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: false
         });
         targetData[1] = abi.encodeWithSelector(BalancerV2DecoderAndSanitizer.swap.selector, singleSwap, funds, 0);
@@ -507,8 +507,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[3] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.joinPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             joinRequest
         );
 
@@ -536,8 +536,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[3] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.joinPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             joinRequest
         );
 
@@ -554,8 +554,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[10] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.exitPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             exitRequest
         );
 
@@ -581,8 +581,8 @@ contract BalancerAndAuraIntegrationTest is Test, MerkleTreeHelper {
         targetData[10] = abi.encodeWithSelector(
             BalancerV2DecoderAndSanitizer.exitPool.selector,
             poolId,
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             exitRequest
         );
 

@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 contract CreateLiquidUsdMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C;
+    address public oriusVault = 0x08c6F91e2B681FaF5e17227F2a44C307b3C1364C;
     // address public rawDataDecoderAndSanitizer = 0x96B0d32c5F8C15Ee7B4aaF19a7F92809a8c9eDeD;
     address public rawDataDecoderAndSanitizer = 0xF8e9517e7e98D7134E306aD3747A50AC8dC1dbc9;
     address public symbioticDecoderAndSanitizer = 0xdaEfE2146908BAd73A1C45f75eB2B8E46935c781;
@@ -50,7 +50,7 @@ contract CreateLiquidUsdMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateMiniLiquidUsdStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -78,7 +78,7 @@ contract CreateLiquidUsdMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateLiquidUsdStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -1038,7 +1038,7 @@ contract CreateLiquidUsdMerkleRootScript is Script, MerkleTreeHelper {
             string.concat("Deposit To", underlying.symbol(), " into the reserve ERC20 wrapper"),
             itbDecoderAndSanitizer
         );
-        leafs[leafIndex].argumentAddresses[0] = boringVault;
+        leafs[leafIndex].argumentAddresses[0] = oriusVault;
 
         // Add withdraw leaf.
         unchecked {
@@ -1065,6 +1065,6 @@ contract CreateLiquidUsdMerkleRootScript is Script, MerkleTreeHelper {
             string.concat("Withdraw To ", underlying.symbol(), " from the reserve ERC20 wrapper"),
             itbDecoderAndSanitizer
         );
-        leafs[leafIndex].argumentAddresses[0] = boringVault;
+        leafs[leafIndex].argumentAddresses[0] = oriusVault;
     }
 }

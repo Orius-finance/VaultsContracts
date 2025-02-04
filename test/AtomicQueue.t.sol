@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -21,7 +21,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant MINTER_ROLE = 1;
     uint8 public constant BURNER_ROLE = 2;
@@ -57,26 +57,26 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
         USDC = getERC20(sourceChain, "USDC");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payoutAddress, 1e18, address(WETH), 1.1e4, 0.9e4, 1, 0, 0
+            address(this), address(oriusVault), payoutAddress, 1e18, address(WETH), 1.1e4, 0.9e4, 1, 0, 0
         );
 
         teller =
-            new TellerWithMultiAssetSupport(address(this), address(boringVault), address(accountant), address(WETH));
+            new TellerWithMultiAssetSupport(address(this), address(oriusVault), address(accountant), address(WETH));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
         atomicQueue = new AtomicQueue(address(this), rolesAuthority);
         atomicSolverV3 = new AtomicSolverV3(address(this), rolesAuthority);
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         teller.setAuthority(rolesAuthority);
 
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
         rolesAuthority.setRoleCapability(
             SOLVER_ROLE, address(teller), TellerWithMultiAssetSupport.bulkDeposit.selector, true
         );
@@ -99,15 +99,15 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
         teller.updateAssetData(WETH, true, true, 0);
         teller.updateAssetData(WEETH, true, true, 0);
 
-        // User buys some BoringVault shares.
+        // User buys some OriusVault shares.
         deal(address(WETH), address(user), 1_000e18);
         deal(address(WEETH), address(user), 1_001e18);
 
         vm.startPrank(user);
-        WETH.approve(address(boringVault), type(uint256).max);
-        WEETH.approve(address(boringVault), type(uint256).max);
+        WETH.approve(address(oriusVault), type(uint256).max);
+        WEETH.approve(address(oriusVault), type(uint256).max);
         WEETH.approve(address(atomicQueue), type(uint256).max);
-        boringVault.approve(address(atomicQueue), type(uint256).max);
+        oriusVault.approve(address(atomicQueue), type(uint256).max);
         teller.deposit(WETH, 1_000e18, 0);
         teller.deposit(WEETH, 1_000e18, 0);
         vm.stopPrank();
@@ -129,14 +129,14 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
             inSolve: false
         });
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__Paused.selector)));
-        atomicQueue.updateAtomicRequest(boringVault, WETH, req);
+        atomicQueue.updateAtomicRequest(oriusVault, WETH, req);
 
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__Paused.selector)));
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, req, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, req, accountant, 0.0001e6);
         vm.stopPrank();
 
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__Paused.selector)));
-        atomicQueue.solve(boringVault, WETH, new address[](0), hex"", address(0));
+        atomicQueue.solve(oriusVault, WETH, new address[](0), hex"", address(0));
     }
 
     function testSafeUpadteAtomicRequest() external {
@@ -148,7 +148,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
             inSolve: false
         });
         vm.prank(user);
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WEETH, req, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WEETH, req, accountant, 0.0001e6);
 
         // Zero out users weETH balance.
         deal(address(WEETH), user, 0);
@@ -158,7 +158,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
         WEETH.approve(address(atomicSolverV3), type(uint256).max);
         address[] memory users = new address[](1);
         users[0] = user;
-        atomicSolverV3.p2pSolve(atomicQueue, boringVault, WEETH, users, 0, type(uint256).max);
+        atomicSolverV3.p2pSolve(atomicQueue, oriusVault, WEETH, users, 0, type(uint256).max);
 
         uint256 expectedWeethForUser = accountant.getRateInQuoteSafe(WEETH).mulDivDown(0.9999e4, 1e4);
         assertApproxEqAbs(WEETH.balanceOf(user), expectedWeethForUser, 2, "User should receive WEETH");
@@ -177,11 +177,11 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
                 abi.encodeWithSelector(
                     AtomicQueue.AtomicQueue__SafeRequestOfferAmountGreaterThanOfferBalance.selector,
                     unsafeRequest.offerAmount,
-                    boringVault.balanceOf(user)
+                    oriusVault.balanceOf(user)
                 )
             )
         );
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.0001e6);
 
         unsafeRequest = AtomicQueue.AtomicRequest({
             deadline: uint64(block.timestamp - 1),
@@ -196,7 +196,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
                 )
             )
         );
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.0001e6);
 
         unsafeRequest = AtomicQueue.AtomicRequest({
             deadline: uint64(block.timestamp + 1),
@@ -205,7 +205,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
             inSolve: false
         });
 
-        boringVault.approve(address(atomicQueue), 0);
+        oriusVault.approve(address(atomicQueue), 0);
 
         vm.expectRevert(
             bytes(
@@ -216,9 +216,9 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
                 )
             )
         );
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.0001e6);
 
-        boringVault.approve(address(atomicQueue), type(uint256).max);
+        oriusVault.approve(address(atomicQueue), type(uint256).max);
 
         unsafeRequest = AtomicQueue.AtomicRequest({
             deadline: uint64(block.timestamp + 1),
@@ -227,7 +227,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
             inSolve: false
         });
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__SafeRequestOfferAmountZero.selector)));
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.0001e6);
 
         unsafeRequest = AtomicQueue.AtomicRequest({
             deadline: uint64(block.timestamp + 1),
@@ -236,7 +236,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
             inSolve: false
         });
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__SafeRequestDiscountTooLarge.selector)));
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.010001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.010001e6);
 
         vm.expectRevert(
             bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__SafeRequestAccountantOfferMismatch.selector))
@@ -249,7 +249,7 @@ contract AtomicQueueTest is Test, MerkleTreeHelper {
 
         vm.startPrank(user);
         vm.expectRevert(bytes(abi.encodeWithSelector(AtomicQueue.AtomicQueue__SafeRequestCannotCastToUint88.selector)));
-        atomicQueue.safeUpdateAtomicRequest(boringVault, WETH, unsafeRequest, accountant, 0.0001e6);
+        atomicQueue.safeUpdateAtomicRequest(oriusVault, WETH, unsafeRequest, accountant, 0.0001e6);
         vm.stopPrank();
     }
 

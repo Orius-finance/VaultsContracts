@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -21,7 +21,7 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -29,7 +29,7 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -40,33 +40,33 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new AeraVaultFullDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new AeraVaultFullDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -87,7 +87,7 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -98,7 +98,7 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
@@ -106,19 +106,19 @@ contract AeraVaultIntegrationTest is Test, MerkleTreeHelper {
         address aeraVault = getAddress(sourceChain, "aeraCompoundReservesVault");
         address owner = IVault(aeraVault).owner();
         vm.prank(owner);
-        IVault(aeraVault).transferOwnership(address(boringVault));
+        IVault(aeraVault).transferOwnership(address(oriusVault));
 
         address pendingOwner = IVault(aeraVault).pendingOwner();
-        assertEq(address(boringVault), pendingOwner);
+        assertEq(address(oriusVault), pendingOwner);
 
         vm.prank(pendingOwner);
         IVault(aeraVault).acceptOwnership();
 
         address whale = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
         vm.prank(whale);
-        getERC20(sourceChain, "USDC").transfer(address(boringVault), 1000e6);
+        getERC20(sourceChain, "USDC").transfer(address(oriusVault), 1000e6);
 
-        uint256 usdcBalance = getERC20(sourceChain, "USDC").balanceOf(address(boringVault));
+        uint256 usdcBalance = getERC20(sourceChain, "USDC").balanceOf(address(oriusVault));
         assertEq(usdcBalance, 1000e6);
 
         ERC20[] memory assets = new ERC20[](1);

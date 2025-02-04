@@ -45,8 +45,8 @@ contract DexAggregatorUManager is UManager {
      */
     PriceRouter internal immutable priceRouter;
 
-    constructor(address _owner, address _manager, address _boringVault, address _router, address _priceRouter)
-        UManager(_owner, _manager, _boringVault)
+    constructor(address _owner, address _manager, address _oriusVault, address _router, address _priceRouter)
+        UManager(_owner, _manager, _oriusVault)
     {
         router = AggregationRouterV5(_router);
         priceRouter = PriceRouter(_priceRouter);
@@ -93,12 +93,12 @@ contract DexAggregatorUManager is UManager {
         targetData[1] = data;
         // values[1] = 0;
 
-        uint256 tokenOutBalanceDelta = tokenOut.balanceOf(boringVault);
+        uint256 tokenOutBalanceDelta = tokenOut.balanceOf(oriusVault);
 
         // Make the manage call.
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        tokenOutBalanceDelta = tokenOut.balanceOf(boringVault) - tokenOutBalanceDelta;
+        tokenOutBalanceDelta = tokenOut.balanceOf(oriusVault) - tokenOutBalanceDelta;
 
         uint256 tokenOutQuotedInTokenIn = priceRouter.getValue(tokenOut, tokenOutBalanceDelta, tokenIn);
 
@@ -108,7 +108,7 @@ contract DexAggregatorUManager is UManager {
         }
 
         // Check that full allowance was used, if not reuse the first proof and revoke it.
-        if (tokenIn.allowance(boringVault, address(router)) > 0) {
+        if (tokenIn.allowance(oriusVault, address(router)) > 0) {
             bytes32[][] memory revokeApproveProof = new bytes32[][](1);
             revokeApproveProof[0] = manageProofs[0];
             address[] memory revokeApproveDecodersAndSanitizers = new address[](1);

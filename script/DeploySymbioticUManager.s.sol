@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Strings} from "lib/openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -23,7 +23,7 @@ contract DeploySymbioticUManagerScript is MerkleTreeHelper, ContractNames {
 
     address public managerAddress = 0x382d0106F308864D5462332D9D3bB54a60384B70;
     address public rawDataDecoderAndSanitizer = 0xa2Da7A948254692d7B261bBd27b3Cd1E2C7B033c;
-    BoringVault public boringVault = BoringVault(payable(0x657e8C867D8B37dCC18fA4Caead9C45EB088C642));
+    OriusVault public oriusVault = OriusVault(payable(0x657e8C867D8B37dCC18fA4Caead9C45EB088C642));
     ManagerWithMerkleVerification public manager =
         ManagerWithMerkleVerification(0x382d0106F308864D5462332D9D3bB54a60384B70);
     address public accountantAddress = 0x1b293DC39F94157fA0D1D36d7e0090C8B8B8c13F;
@@ -55,7 +55,7 @@ contract DeploySymbioticUManagerScript is MerkleTreeHelper, ContractNames {
         rolesAuthority = RolesAuthority(deployer.getAddress(SevenSeasRolesAuthorityName));
 
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", address(boringVault));
+        setAddress(false, mainnet, "oriusVault", address(oriusVault));
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

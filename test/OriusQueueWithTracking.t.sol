@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -12,18 +12,18 @@ import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthorit
 import {AtomicSolverV3, AtomicQueue} from "src/atomic-queue/AtomicSolverV3.sol";
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
-import {BoringOnChainQueueWithTracking} from "src/base/Roles/BoringQueue/BoringOnChainQueueWithTracking.sol";
-import {BoringOnChainQueue} from "src/base/Roles/BoringQueue/BoringOnChainQueue.sol";
-import {BoringSolver} from "src/base/Roles/BoringQueue/BoringSolver.sol";
+import {OriusOnChainQueueWithTracking} from "src/base/Roles/OriusQueue/OriusOnChainQueueWithTracking.sol";
+import {OriusOnChainQueue} from "src/base/Roles/OriusQueue/OriusOnChainQueue.sol";
+import {OriusSolver} from "src/base/Roles/OriusQueue/OriusSolver.sol";
 
 import {Test, stdStorage, StdStorage, stdError, console} from "@forge-std/Test.sol";
 
-contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
+contract OriusQueueWithtrackingTest is Test, MerkleTreeHelper {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant MINTER_ROLE = 1;
     uint8 public constant BURNER_ROLE = 2;
@@ -44,8 +44,8 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
 
     address public testUser = vm.addr(1);
 
-    BoringOnChainQueueWithTracking public boringQueue;
-    BoringSolver public boringSolver;
+    OriusOnChainQueueWithTracking public oriusQueue;
+    OriusSolver public oriusSolver;
     ERC20 internal WETH;
     ERC20 internal EETH;
     ERC20 internal WEETH;
@@ -65,45 +65,45 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         USDC = getERC20(sourceChain, "USDC");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringQueue = new BoringOnChainQueueWithTracking(
+        oriusQueue = new OriusOnChainQueueWithTracking(
             address(this), address(liquidEth_roles_authority), payable(liquidEth), address(liquidEth_accountant), true
         );
-        boringSolver = new BoringSolver(address(this), address(liquidEth_roles_authority), address(boringQueue));
+        oriusSolver = new OriusSolver(address(this), address(liquidEth_roles_authority), address(oriusQueue));
 
-        // Grant BoringSolver SOLVER_ROLES for on both vaults.
+        // Grant OriusSolver SOLVER_ROLES for on both vaults.
         vm.startPrank(weETHs_roles_authority.owner());
-        weETHs_roles_authority.setUserRole(address(boringSolver), 12, true);
+        weETHs_roles_authority.setUserRole(address(oriusSolver), 12, true);
         vm.stopPrank();
         // Also add weETHs to liquid Eths accountant.
         vm.startPrank(liquidEth_roles_authority.owner());
-        liquidEth_roles_authority.setUserRole(address(boringSolver), 12, true);
+        liquidEth_roles_authority.setUserRole(address(oriusSolver), 12, true);
         liquidEth_accountant.setRateProviderData(ERC20(weETHs), false, address(weETHs_accountant));
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueue.requestOnChainWithdraw.selector, true
+            address(oriusQueue), OriusOnChainQueue.requestOnChainWithdraw.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueue.requestOnChainWithdrawWithPermit.selector, true
+            address(oriusQueue), OriusOnChainQueue.requestOnChainWithdrawWithPermit.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueue.cancelOnChainWithdraw.selector, true
+            address(oriusQueue), OriusOnChainQueue.cancelOnChainWithdraw.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueueWithTracking.cancelOnChainWithdrawUsingRequestId.selector, true
+            address(oriusQueue), OriusOnChainQueueWithTracking.cancelOnChainWithdrawUsingRequestId.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueue.replaceOnChainWithdraw.selector, true
+            address(oriusQueue), OriusOnChainQueue.replaceOnChainWithdraw.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueueWithTracking.replaceOnChainWithdrawUsingRequestId.selector, true
+            address(oriusQueue), OriusOnChainQueueWithTracking.replaceOnChainWithdrawUsingRequestId.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringQueue), BoringOnChainQueue.solveOnChainWithdraws.selector, true
+            address(oriusQueue), OriusOnChainQueue.solveOnChainWithdraws.selector, true
         );
         liquidEth_roles_authority.setPublicCapability(
-            address(boringSolver), BoringSolver.boringRedeemSelfSolve.selector, true
+            address(oriusSolver), OriusSolver .oriusRedeemSelfSolve.selector, true
         );
-        liquidEth_roles_authority.setRoleCapability(222, address(boringSolver), BoringSolver.boringSolve.selector, true);
-        liquidEth_roles_authority.setUserRole(address(boringQueue), 222, true);
+        liquidEth_roles_authority.setRoleCapability(222, address(oriusSolver), OriusSolver .oriusSolve.selector, true);
+        liquidEth_roles_authority.setUserRole(address(oriusQueue), 222, true);
         vm.stopPrank();
 
         // Give test user some Liquid ETH shares.
@@ -115,13 +115,13 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         // Make sure this address has wETH.
         deal(address(WETH), address(this), 10_000e18);
 
-        // Add wETH as a withdraw asset on the boringQueue.
-        boringQueue.updateWithdrawAsset(address(WETH), 3 days, 1 days, 1, 100, 0.01e18);
+        // Add wETH as a withdraw asset on the oriusQueue.
+        oriusQueue.updateWithdrawAsset(address(WETH), 3 days, 1 days, 1, 100, 0.01e18);
 
-        // Add weETHs as a withdraw asset on the boringQueue.
-        boringQueue.updateWithdrawAsset(weETHs, 0, 1 days, 1, 100, 0.01e18);
+        // Add weETHs as a withdraw asset on the oriusQueue.
+        oriusQueue.updateWithdrawAsset(weETHs, 0, 1 days, 1, 100, 0.01e18);
 
-        deal(address(liquidEth), address(boringQueue), 1);
+        deal(address(liquidEth), address(oriusQueue), 1);
     }
 
     function testUserRequestsThenCancelsUsingRequestId(uint128 amountOfShares, uint16 discount) external {
@@ -133,7 +133,7 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
 
         // Cancel the request.
         vm.prank(testUser);
-        boringQueue.cancelOnChainWithdrawUsingRequestId(requestId);
+        oriusQueue.cancelOnChainWithdrawUsingRequestId(requestId);
 
         uint256 endingShares = ERC20(liquidEth).balanceOf(testUser);
 
@@ -153,7 +153,7 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         // Repalce the request.
         uint256 startingShares = ERC20(liquidEth).balanceOf(testUser);
         vm.prank(testUser);
-        boringQueue.replaceOnChainWithdrawUsingRequestId(requestId, newDiscount, secondsToDeadline);
+        oriusQueue.replaceOnChainWithdrawUsingRequestId(requestId, newDiscount, secondsToDeadline);
 
         uint256 endingShares = ERC20(liquidEth).balanceOf(testUser);
 
@@ -178,7 +178,7 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
                 _haveUserCreateRequest(testUser, address(WETH), amountOfShares[i], discount[i], secondsToDeadline);
         }
 
-        (, BoringOnChainQueue.OnChainWithdraw[] memory requests) = boringQueue.getWithdrawRequests();
+        (, OriusOnChainQueue.OnChainWithdraw[] memory requests) = oriusQueue.getWithdrawRequests();
 
         for (uint256 i; i < 4; ++i) {
             assetSum += requests[i].amountOfAssets;
@@ -188,7 +188,7 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         skip(3 days);
 
         uint256 wETHDelta = WETH.balanceOf(address(this));
-        boringSolver.boringRedeemSolve(requests, liquidEth_teller);
+        oriusSolver .oriusRedeemSolve(requests, liquidEth_teller);
         wETHDelta = WETH.balanceOf(address(this)) - wETHDelta;
         uint256 endingShares = ERC20(liquidEth).balanceOf(testUser);
 
@@ -198,16 +198,16 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
 
     function testQueueAdminCalls() external {
         // Check toggle track withdraw onchain effects.
-        assertEq(boringQueue.trackWithdrawsOnChain(), true, "Queue should be tracking onchain withdraws.");
-        boringQueue.toggleTrackWithdrawsOnChain();
-        assertEq(boringQueue.trackWithdrawsOnChain(), false, "Queue should not be tracking onchain withdraws.");
-        boringQueue.toggleTrackWithdrawsOnChain();
-        assertEq(boringQueue.trackWithdrawsOnChain(), true, "Queue should be tracking onchain withdraws.");
+        assertEq(oriusQueue.trackWithdrawsOnChain(), true, "Queue should be tracking onchain withdraws.");
+        oriusQueue.toggleTrackWithdrawsOnChain();
+        assertEq(oriusQueue.trackWithdrawsOnChain(), false, "Queue should not be tracking onchain withdraws.");
+        oriusQueue.toggleTrackWithdrawsOnChain();
+        assertEq(oriusQueue.trackWithdrawsOnChain(), true, "Queue should be tracking onchain withdraws.");
     }
 
     function testQueueGetOnChainWithdrawRevert() external {
         // If queue is not tracking withdraws onchain.
-        boringQueue.toggleTrackWithdrawsOnChain();
+        oriusQueue.toggleTrackWithdrawsOnChain();
 
         // And a user makes a request.
         bytes32 requestId = _haveUserCreateRequest(testUser, address(WETH), 1e18, 3, 2 days);
@@ -216,11 +216,11 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         vm.expectRevert(
             bytes(
                 abi.encodeWithSelector(
-                    BoringOnChainQueueWithTracking.BoringOnChainQueueWithTracking__ZeroNonce.selector
+                    OriusOnChainQueueWithTracking.OriusOnChainQueueWithTracking__ZeroNonce.selector
                 )
             )
         );
-        boringQueue.getOnChainWithdraw(requestId);
+        oriusQueue.getOnChainWithdraw(requestId);
     }
 
     // ========================================= HELPER FUNCTIONS =========================================
@@ -237,11 +237,11 @@ contract BoringQueueWithtrackingTest is Test, MerkleTreeHelper {
         uint16 discount,
         uint24 secondsToDeadline
     ) internal returns (bytes32 requestId) {
-        uint96 nonceBefore = boringQueue.nonce();
+        uint96 nonceBefore = oriusQueue.nonce();
         vm.startPrank(user);
-        ERC20(liquidEth).safeApprove(address(boringQueue), amountOfShares);
-        requestId = boringQueue.requestOnChainWithdraw(assetOut, amountOfShares, discount, secondsToDeadline);
+        ERC20(liquidEth).safeApprove(address(oriusQueue), amountOfShares);
+        requestId = oriusQueue.requestOnChainWithdraw(assetOut, amountOfShares, discount, secondsToDeadline);
         vm.stopPrank();
-        assertEq(boringQueue.nonce(), nonceBefore + 1, "Nonce should have increased by 1.");
+        assertEq(oriusQueue.nonce(), nonceBefore + 1, "Nonce should have increased by 1.");
     }
 }

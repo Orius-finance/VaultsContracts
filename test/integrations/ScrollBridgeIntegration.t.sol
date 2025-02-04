@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {}
@@ -40,10 +40,10 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     function testBridgingToScrollETH() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20279353);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 101e18);
+        deal(address(oriusVault), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens;
@@ -64,7 +64,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
         bytes[] memory targetData = new bytes[](1);
 
         targetData[0] =
-            abi.encodeWithSignature("sendMessage(address,uint256,bytes,uint256)", boringVault, 100e18, hex"", 168_000);
+            abi.encodeWithSignature("sendMessage(address,uint256,bytes,uint256)", oriusVault, 100e18, hex"", 168_000);
         uint256[] memory values = new uint256[](1);
         values[0] = 100.01e18;
         address[] memory decodersAndSanitizers = new address[](1);
@@ -76,12 +76,12 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     function testClaimingFromScrollETH() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20678804);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
         address user = 0x0463E60C7cE10e57911AB7bD1667eaa21de3e79b;
-        // Set boring vault address to be user address so we can claim on their behalf.
-        setAddress(true, sourceChain, "boringVault", user);
+        // Set orius vault address to be user address so we can claim on their behalf.
+        setAddress(true, sourceChain, "oriusVault", user);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens;
@@ -116,11 +116,11 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     function testBridgingToScrollERC20() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20279353);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress(sourceChain, "DAI"), address(boringVault), 101e18);
-        deal(address(boringVault), 1e18);
+        deal(getAddress(sourceChain, "DAI"), address(oriusVault), 101e18);
+        deal(address(oriusVault), 1e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens = new ERC20[](1);
@@ -145,7 +145,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[0] =
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "scrollGatewayRouter"), 100e18);
         targetData[1] = abi.encodeWithSignature(
-            "depositERC20(address,address,uint256,uint256)", getAddress(sourceChain, "DAI"), boringVault, 100e18, 180000
+            "depositERC20(address,address,uint256,uint256)", getAddress(sourceChain, "DAI"), oriusVault, 100e18, 180000
         );
         uint256[] memory values = new uint256[](2);
         values[1] = 0.0001e18;
@@ -159,7 +159,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     function testClaimingFromScrollERC20() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20678805);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "accountantAddress", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "managerAddress", rawDataDecoderAndSanitizer);
@@ -202,10 +202,10 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     // function testBridgingToMainnetETH() external {
     //     setSourceChainName("scroll");
     //     _createForkAndSetup("SCROLL_RPC_URL", 9022390);
-    //     setAddress(false, sourceChain, "boringVault", address(boringVault));
+    //     setAddress(false, sourceChain, "oriusVault", address(oriusVault));
     //     setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-    //     deal(address(boringVault), 101e18);
+    //     deal(address(oriusVault), 101e18);
 
     //     ManageLeaf[] memory leafs = new ManageLeaf[](8);
     //     ERC20[] memory localTokens;
@@ -225,7 +225,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
 
     //     bytes[] memory targetData = new bytes[](1);
     //     targetData[0] =
-    //         abi.encodeWithSignature("sendMessage(address,uint256,bytes,uint256)", boringVault, 100e18, hex"", 0);
+    //         abi.encodeWithSignature("sendMessage(address,uint256,bytes,uint256)", oriusVault, 100e18, hex"", 0);
     //     uint256[] memory values = new uint256[](1);
     //     values[0] = 100e18;
     //     address[] memory decodersAndSanitizers = new address[](1);
@@ -237,11 +237,11 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     // function testBridgingToMainnetERC20() external {
     //     setSourceChainName("scroll");
     //     _createForkAndSetup("SCROLL_RPC_URL", 9022390);
-    //     setAddress(false, sourceChain, "boringVault", address(boringVault));
+    //     setAddress(false, sourceChain, "oriusVault", address(oriusVault));
     //     setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-    //     deal(getAddress(sourceChain, "DAI"), address(boringVault), 101e18);
-    //     deal(address(boringVault), 1e18);
+    //     deal(getAddress(sourceChain, "DAI"), address(oriusVault), 101e18);
+    //     deal(address(oriusVault), 1e18);
 
     //     ManageLeaf[] memory leafs = new ManageLeaf[](8);
     //     ERC20[] memory localTokens = new ERC20[](1);
@@ -266,7 +266,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     //     targetData[0] =
     //         abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "scrollGatewayRouter"), 100e18);
     //     targetData[1] = abi.encodeWithSignature(
-    //         "withdrawERC20(address,address,uint256,uint256)", getAddress(sourceChain, "DAI"), boringVault, 100e18, 0
+    //         "withdrawERC20(address,address,uint256,uint256)", getAddress(sourceChain, "DAI"), oriusVault, 100e18, 0
     //     );
     //     uint256[] memory values = new uint256[](2);
     //     address[] memory decodersAndSanitizers = new address[](2);
@@ -281,26 +281,26 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
     function _createForkAndSetup(string memory rpcKey, uint256 blockNumber) internal {
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        manager = new ManagerWithMerkleVerification(address(this), address(boringVault), address(0));
+        manager = new ManagerWithMerkleVerification(address(this), address(oriusVault), address(0));
 
-        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(oriusVault)));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -321,7 +321,7 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -332,11 +332,11 @@ contract ScrollBridgeIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(address(0), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function _startFork(string memory rpcKey, uint256 blockNumber) internal returns (uint256 forkId) {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -43,37 +43,37 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new AerodromeDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "aerodromeNonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "aerodromeNonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -94,7 +94,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -105,16 +105,16 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testAerodromeV2() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
-        deal(getAddress(sourceChain, "WSTETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
+        deal(getAddress(sourceChain, "WSTETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         address[] memory token0 = new address[](1);
@@ -163,7 +163,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             1_000e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp + 1
         );
         targetData[3] = abi.encodeWithSignature("approve(address,uint256)", gauges[0], type(uint256).max);
@@ -197,7 +197,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         targets[3] = getAddress(sourceChain, "aerodromeRouter");
 
         targetData = new bytes[](4);
-        targetData[0] = abi.encodeWithSignature("getReward(address)", boringVault);
+        targetData[0] = abi.encodeWithSignature("getReward(address)", oriusVault);
         targetData[1] = abi.encodeWithSignature("withdraw(uint256)", lpTokens);
         targetData[2] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "aerodromeRouter"), type(uint256).max
@@ -210,7 +210,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             lpTokens,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp + 1
         );
         values = new uint256[](4);
@@ -223,13 +223,13 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertGt(
-            getERC20(sourceChain, "AERO").balanceOf(address(boringVault)), 0, "Boring Vault should have AERO tokens"
+            getERC20(sourceChain, "AERO").balanceOf(address(oriusVault)), 0, "Orius Vault should have AERO tokens"
         );
     }
 
     function testAerodromeV3() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
-        deal(getAddress(sourceChain, "WSTETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
+        deal(getAddress(sourceChain, "WSTETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         address[] memory token0 = new address[](1);
@@ -284,7 +284,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             500e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp,
             0
         );
@@ -341,7 +341,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         );
 
         DecoderCustomTypes.CollectParams memory collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[3] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
         targetData[4] = abi.encodeWithSignature("burn(uint256)", expectedTokenId);
@@ -358,13 +358,13 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         );
 
         assertGt(
-            getERC20(sourceChain, "AERO").balanceOf(address(boringVault)), 0, "Boring Vault should have AERO tokens"
+            getERC20(sourceChain, "AERO").balanceOf(address(oriusVault)), 0, "Orius Vault should have AERO tokens"
         );
     }
 
     function testAerodromeV3Reverts() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
-        deal(getAddress(sourceChain, "WSTETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
+        deal(getAddress(sourceChain, "WSTETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         address[] memory token0 = new address[](1);
@@ -419,7 +419,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             500e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp,
             0
         );
@@ -468,7 +468,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             500e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp,
             1
         );
@@ -498,7 +498,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
             500e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp,
             0
         );
@@ -537,7 +537,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         );
 
         DecoderCustomTypes.CollectParams memory collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[3] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
         targetData[4] = abi.encodeWithSignature("burn(uint256)", expectedTokenId);
@@ -565,7 +565,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         );
 
         collectParams =
-            DecoderCustomTypes.CollectParams(badTokenId, address(boringVault), type(uint128).max, type(uint128).max);
+            DecoderCustomTypes.CollectParams(badTokenId, address(oriusVault), type(uint128).max, type(uint128).max);
         targetData[3] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
 
         vm.expectRevert(
@@ -578,7 +578,7 @@ contract AerodromeIntegrationTest is Test, MerkleTreeHelper {
         );
 
         collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[3] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {DelayedWithdraw} from "src/base/Roles/DelayedWithdraw.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -20,7 +20,7 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant BURNER_ROLE = 8;
 
@@ -49,23 +49,23 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         USDC = getERC20(sourceChain, "USDC");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payoutAddress, 1e18, address(WETH), 1.1e4, 0.9e4, 1, 0, 0
+            address(this), address(oriusVault), payoutAddress, 1e18, address(WETH), 1.1e4, 0.9e4, 1, 0, 0
         );
 
-        withdrawer = new DelayedWithdraw(address(this), address(boringVault), address(accountant), payoutAddress);
+        withdrawer = new DelayedWithdraw(address(this), address(oriusVault), address(accountant), payoutAddress);
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         withdrawer.setAuthority(rolesAuthority);
 
         withdrawer.setPullFundsFromVault(true);
 
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
         rolesAuthority.setPublicCapability(address(withdrawer), DelayedWithdraw.cancelWithdraw.selector, true);
         rolesAuthority.setPublicCapability(address(withdrawer), DelayedWithdraw.requestWithdraw.selector, true);
         rolesAuthority.setPublicCapability(address(withdrawer), DelayedWithdraw.completeWithdraw.selector, true);
@@ -84,13 +84,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH/.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH/.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, false);
         vm.stopPrank();
 
@@ -120,13 +120,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH/.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH/.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, false);
         vm.stopPrank();
 
@@ -141,8 +141,8 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         // User waits 1 day.
         skip(1 days);
 
-        // BoringVault then transfers assets to withdrawer to cover withdraws.
-        vm.prank(address(boringVault));
+        // OriusVault then transfers assets to withdrawer to cover withdraws.
+        vm.prank(address(oriusVault));
         WETH.safeTransfer(address(withdrawer), 100e18);
 
         vm.startPrank(user);
@@ -160,13 +160,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -189,13 +189,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -218,13 +218,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, false);
         vm.stopPrank();
 
@@ -252,15 +252,15 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
-        uint256 userShareBalance = boringVault.balanceOf(user);
+        uint256 userShareBalance = oriusVault.balanceOf(user);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), 2 * sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), 2 * sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, false);
         withdrawer.requestWithdraw(EETH, sharesToWithdraw, 0, false);
         vm.stopPrank();
@@ -278,7 +278,7 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         withdrawer.cancelWithdraw(EETH);
         vm.stopPrank();
 
-        assertEq(boringVault.balanceOf(user), userShareBalance, "User should have received their shares back.");
+        assertEq(oriusVault.balanceOf(user), userShareBalance, "User should have received their shares back.");
     }
 
     function testMaxLossLogic() external {
@@ -286,13 +286,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -333,13 +333,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0.01e4, true);
         vm.stopPrank();
 
@@ -380,13 +380,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -409,13 +409,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, false);
         vm.stopPrank();
 
@@ -480,11 +480,11 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         deal(address(WETH), address(withdrawer), 1_000e18);
 
-        vm.prank(address(boringVault));
-        withdrawer.withdrawNonBoringToken(WETH, type(uint256).max);
+        vm.prank(address(oriusVault));
+        withdrawer.withdrawNonOriusToken(WETH, type(uint256).max);
 
         assertEq(WETH.balanceOf(address(withdrawer)), 0, "DelayedWithdraw should have 0 WETH.");
-        assertEq(WETH.balanceOf(address(boringVault)), 1_000e18, "BoringVault should have 1_000 WETH.");
+        assertEq(WETH.balanceOf(address(oriusVault)), 1_000e18, "OriusVault should have 1_000 WETH.");
     }
 
     function testFeeLogic() external {
@@ -493,13 +493,13 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
 
         address user = vm.addr(1);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -512,7 +512,7 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         uint256 expectedAssetsOut = sharesToWithdraw - expectedFee;
         assertEq(assetsOut, expectedAssetsOut, "assetsOut should equal expectedAssetsOut.");
         assertEq(WETH.balanceOf(user), assetsOut, "User should have received assetsOut of WETH");
-        assertEq(boringVault.balanceOf(payoutAddress), expectedFee, "Payout address should have received expectedFee.");
+        assertEq(oriusVault.balanceOf(payoutAddress), expectedFee, "Payout address should have received expectedFee.");
     }
 
     function testPauseLogic() external {
@@ -543,9 +543,9 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         vm.prank(user);
         withdrawer.setAllowThirdPartyToComplete(WETH, true);
 
-        // Simulate user deposit by minting 1_000 shares to them, and giving BoringVault 1_000 WETH.
-        deal(address(boringVault), user, 1_000e18, true);
-        deal(address(WETH), address(boringVault), 1_000e18);
+        // Simulate user deposit by minting 1_000 shares to them, and giving OriusVault 1_000 WETH.
+        deal(address(oriusVault), user, 1_000e18, true);
+        deal(address(WETH), address(oriusVault), 1_000e18);
 
         // Requeting withdraws in an asset that is not withdrawable.
         ERC20 nonWithdrawableAsset = USDC;
@@ -561,7 +561,7 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         // Requesting withdraws
         uint96 sharesToWithdraw = 100e18;
         vm.startPrank(user);
-        boringVault.approve(address(withdrawer), sharesToWithdraw);
+        oriusVault.approve(address(withdrawer), sharesToWithdraw);
         withdrawer.requestWithdraw(WETH, sharesToWithdraw, 0, true);
         vm.stopPrank();
 
@@ -632,14 +632,14 @@ contract DelayedWithdrawTest is Test, MerkleTreeHelper {
         vm.expectRevert(bytes(abi.encodeWithSelector(DelayedWithdraw.DelayedWithdraw__BadAddress.selector)));
         withdrawer.setFeeAddress(address(0));
 
-        vm.expectRevert(bytes(abi.encodeWithSelector(DelayedWithdraw.DelayedWithdraw__CallerNotBoringVault.selector)));
-        withdrawer.withdrawNonBoringToken(WETH, 1);
+        vm.expectRevert(bytes(abi.encodeWithSelector(DelayedWithdraw.DelayedWithdraw__CallerNotOriusVault.selector)));
+        withdrawer.withdrawNonOriusToken(WETH, 1);
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         vm.expectRevert(
-            bytes(abi.encodeWithSelector(DelayedWithdraw.DelayedWithdraw__CannotWithdrawBoringToken.selector))
+            bytes(abi.encodeWithSelector(DelayedWithdraw.DelayedWithdraw__CannotWithdrawOriusToken.selector))
         );
-        withdrawer.withdrawNonBoringToken(boringVault, 1);
+        withdrawer.withdrawNonOriusToken(oriusVault, 1);
         vm.stopPrank();
     }
 

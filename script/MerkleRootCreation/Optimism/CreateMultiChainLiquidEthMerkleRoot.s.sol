@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 contract CreateMultiChainLiquidEthMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0xf0bb20865277aBd641a307eCe5Ee04E79073416C;
+    address public oriusVault = 0xf0bb20865277aBd641a307eCe5Ee04E79073416C;
     address public rawDataDecoderAndSanitizer = 0x568a4E08909aab6995979dB24B3cdaE00244CeB4;
     address public managerAddress = 0x227975088C28DBBb4b421c6d96781a53578f19a8;
     address public accountantAddress = 0x0d05D94a5F1E76C18fbeB7A13d17C8a314088198;
@@ -35,7 +35,7 @@ contract CreateMultiChainLiquidEthMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateMultiChainLiquidEthStrategistMerkleRoot() public {
         setSourceChainName(optimism);
-        setAddress(false, optimism, "boringVault", boringVault);
+        setAddress(false, optimism, "oriusVault", oriusVault);
         setAddress(false, optimism, "managerAddress", managerAddress);
         setAddress(false, optimism, "accountantAddress", accountantAddress);
         setAddress(false, optimism, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

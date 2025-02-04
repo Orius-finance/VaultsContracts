@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {DeployArcticArchitecture, ERC20, Deployer} from "script/ArchitectureDeployments/DeployArcticArchitecture.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {ChainValues} from "test/resources/ChainValues.sol";
@@ -25,7 +25,7 @@ contract VaultFactory {
     }
 
     function create(string memory _name, string memory _symbol) public returns (address) {
-        BoringVault vault = new BoringVault(
+        OriusVault vault = new OriusVault(
             owner, // address _owner,
             _name, // string memory _name, 
             _symbol, // string memory _symbol, 
@@ -120,7 +120,7 @@ contract OriusFactory {
         address WETH = 0x4200000000000000000000000000000000000006;
         address myAddress = 0x4BEB1413d5B15B147458242Fc6E96bF8f6635F52;
 
-        BoringVault vault = BoringVault(payable(vaultFactory.create(_name, _symbol)));
+        OriusVault vault = OriusVault(payable(vaultFactory.create(_name, _symbol)));
         AccountantWithFixedRate accountant = AccountantWithFixedRate(accountantFactory.create(address(vault)));
         TellerWithMultiAssetSupport teller = TellerWithMultiAssetSupport(tellerFactory.create(address(vault), address(accountant)));
 

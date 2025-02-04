@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {LayerZeroTeller} from "src/base/Roles/CrossChain/Bridges/LayerZero/LayerZeroTeller.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -22,7 +22,7 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
     using AddressToBytes32Lib for address;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant ADMIN_ROLE = 1;
     uint8 public constant MINTER_ROLE = 7;
@@ -64,17 +64,17 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
         ZRO = getERC20(sourceChain, "ZRO");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         endPoint = new MockLayerZeroEndPoint();
 
         sourceTeller = new LayerZeroTeller(
             address(this),
-            address(boringVault),
+            address(oriusVault),
             address(accountant),
             address(WETH),
             address(endPoint),
@@ -84,7 +84,7 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
 
         destinationTeller = new LayerZeroTeller(
             address(this),
-            address(boringVault),
+            address(oriusVault),
             address(accountant),
             address(WETH),
             address(endPoint),
@@ -94,13 +94,13 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         sourceTeller.setAuthority(rolesAuthority);
         destinationTeller.setAuthority(rolesAuthority);
 
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
 
         rolesAuthority.setUserRole(address(sourceTeller), MINTER_ROLE, true);
         rolesAuthority.setUserRole(address(sourceTeller), BURNER_ROLE, true);
@@ -126,9 +126,9 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
         endPoint.setSenderToId(address(sourceTeller), SOURCE_ID);
         endPoint.setSenderToId(address(destinationTeller), DESTINATION_ID);
 
-        // Give BoringVault some WETH, and this address some shares.
-        deal(address(WETH), address(boringVault), 1_000e18);
-        deal(address(boringVault), address(this), 1_000e18, true);
+        // Give OriusVault some WETH, and this address some shares.
+        deal(address(WETH), address(oriusVault), 1_000e18);
+        deal(address(oriusVault), address(this), 1_000e18, true);
 
         // Setup chains on bridge.
         sourceTeller.addChain(DESTINATION_ID, true, true, address(destinationTeller), 1_000_000);
@@ -137,7 +137,7 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
 
     function testBridgingShares(uint96 sharesToBridge) external {
         sharesToBridge = uint96(bound(sharesToBridge, 1, 1_000e18));
-        // uint256 startingShareBalance = boringVault.balanceOf(address(this));
+        // uint256 startingShareBalance = oriusVault.balanceOf(address(this));
 
         // Bridge 100 shares.
         address to = vm.addr(1);
@@ -150,7 +150,7 @@ contract LayerZeroTellerTest is Test, MerkleTreeHelper {
         vm.prank(address(endPoint));
         LayerZeroTeller(m.to).lzReceive(m._origin, m._guid, m._message, m._executor, m._extraData);
 
-        assertEq(boringVault.balanceOf(to), sharesToBridge, "To address should have received shares.");
+        assertEq(oriusVault.balanceOf(to), sharesToBridge, "To address should have received shares.");
     }
 
     function testPreviewFee(uint256 fee) external {

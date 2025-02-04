@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -46,37 +46,37 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -97,7 +97,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -108,13 +108,13 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testMorphoBlueIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 100e18);
 
         // supply weth
         // withdraw weth
@@ -163,7 +163,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[2] = abi.encodeWithSignature(
@@ -171,8 +171,8 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18 - 1,
             0,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
         targetData[3] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "morphoBlue"), type(uint256).max
@@ -181,7 +181,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)",
             params,
             100e18,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[5] = abi.encodeWithSignature(
@@ -189,23 +189,23 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             10e18,
             0,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
         targetData[6] = abi.encodeWithSignature(
             "repay((address,address,address,address,uint256),uint256,uint256,address,bytes)",
             params,
             10e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[7] = abi.encodeWithSignature(
             "withdrawCollateral((address,address,address,address,uint256),uint256,address,address)",
             params,
             90e18,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
 
         address[] memory decodersAndSanitizers = new address[](8);
@@ -223,8 +223,8 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testMorphoBlueIntegrationReverts() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 100e18);
 
         // supply weth
         // withdraw weth
@@ -273,7 +273,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[2] = abi.encodeWithSignature(
@@ -281,8 +281,8 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18 - 1,
             0,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
         targetData[3] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "morphoBlue"), type(uint256).max
@@ -291,7 +291,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)",
             params,
             100e18,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[5] = abi.encodeWithSignature(
@@ -299,23 +299,23 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             10e18,
             0,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
         targetData[6] = abi.encodeWithSignature(
             "repay((address,address,address,address,uint256),uint256,uint256,address,bytes)",
             params,
             10e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
         targetData[7] = abi.encodeWithSignature(
             "withdrawCollateral((address,address,address,address,uint256),uint256,address,address)",
             params,
             90e18,
-            address(boringVault),
-            address(boringVault)
+            address(oriusVault),
+            address(oriusVault)
         );
 
         address[] memory decodersAndSanitizers = new address[](8);
@@ -334,7 +334,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex"DEAD"
         );
 
@@ -353,7 +353,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             100e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
 
@@ -362,7 +362,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)",
             params,
             100e18,
-            address(boringVault),
+            address(oriusVault),
             hex"DEAD"
         );
 
@@ -380,7 +380,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             "supplyCollateral((address,address,address,address,uint256),uint256,address,bytes)",
             params,
             100e18,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
 
@@ -390,7 +390,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             10e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex"DEAD"
         );
 
@@ -409,7 +409,7 @@ contract MorphoBlueIntegrationTest is Test, MerkleTreeHelper {
             params,
             10e18,
             0,
-            address(boringVault),
+            address(oriusVault),
             hex""
         );
 

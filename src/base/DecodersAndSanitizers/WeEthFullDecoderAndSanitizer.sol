@@ -5,5 +5,5 @@ import {WeETHDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Protocols
 import {BaseDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/BaseDecoderAndSanitizer.sol";
 
 contract WeETHFullDecoderAndSanitizer is WeETHDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 }

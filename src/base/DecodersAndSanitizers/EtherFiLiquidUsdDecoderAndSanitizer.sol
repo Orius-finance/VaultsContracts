@@ -49,8 +49,8 @@ contract EtherFiLiquidUsdDecoderAndSanitizer is
     KarakDecoderAndSanitizer,
     UsualMoneyDecoderAndSanitizer
 {
-    constructor(address _boringVault, address _uniswapV3NonFungiblePositionManager)
-        BaseDecoderAndSanitizer(_boringVault)
+    constructor(address _oriusVault, address _uniswapV3NonFungiblePositionManager)
+        BaseDecoderAndSanitizer(_oriusVault)
         UniswapV3DecoderAndSanitizer(_uniswapV3NonFungiblePositionManager)
     {}
 

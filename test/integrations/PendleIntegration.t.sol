@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -43,37 +43,37 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -94,7 +94,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -105,12 +105,12 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testPendleRouterSwapBetweenSyAndPt() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](32);
         _addPendleMarketLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarket"), false);
@@ -153,7 +153,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[3] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
@@ -163,7 +163,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         DecoderCustomTypes.LimitOrderData memory limitOrderData;
         targetData[4] = abi.encodeWithSignature(
             "swapExactSyForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256),(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1_000e18,
             0,
@@ -172,7 +172,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "swapExactPtForSy(address,address,uint256,uint256,(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1067250850449490881768,
             0,
@@ -192,7 +192,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPendleRouterSwapBetweenSyAndYt() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](32);
         _addPendleMarketLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarket"), false);
@@ -235,7 +235,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[3] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
@@ -245,7 +245,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         DecoderCustomTypes.LimitOrderData memory limitOrderData;
         targetData[4] = abi.encodeWithSignature(
             "swapExactSyForYt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256),(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1_000e18,
             0,
@@ -254,7 +254,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "swapExactYtForSy(address,address,uint256,uint256,(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1067250850449490881768,
             0,
@@ -274,7 +274,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPendleRouterIntegration() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         // Need 4 approvals all for router, WEETH, SY, PT, YT
         // WEETH -> SY
@@ -346,14 +346,14 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
         );
         targetData[6] = abi.encodeWithSignature(
             "mintPyFromSy(address,address,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleEethYt"),
             100e18,
             0
@@ -362,7 +362,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
             DecoderCustomTypes.ApproxParams(0, type(uint256).max, 0, 2566, 1e14);
         targetData[7] = abi.encodeWithSignature(
             "swapExactYtForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             10e18,
             0,
@@ -370,7 +370,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[8] = abi.encodeWithSignature(
             "swapExactPtForYt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1e18,
             0,
@@ -378,7 +378,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[9] = abi.encodeWithSignature(
             "addLiquidityDualSyAndPt(address,address,uint256,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1e18,
             1e18,
@@ -386,7 +386,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[10] = abi.encodeWithSignature(
             "removeLiquidityDualSyAndPt(address,address,uint256,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             0.1e18,
             0,
@@ -394,7 +394,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[11] = abi.encodeWithSignature(
             "redeemPyToSy(address,address,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleEethYt"),
             0.1e18,
             0
@@ -404,7 +404,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[12] = abi.encodeWithSignature(
             "redeemSyToToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             1e18,
             tokenOutput
@@ -430,7 +430,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPendleRouterReverts() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         // Need 4 approvals all for router, WEETH, SY, PT, YT
         // WEETH -> SY
@@ -500,14 +500,14 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
         );
         targetData[6] = abi.encodeWithSignature(
             "mintPyFromSy(address,address,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleEethYt"),
             100e18,
             0
@@ -516,7 +516,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
             DecoderCustomTypes.ApproxParams(0, type(uint256).max, 0, 2566, 1e14);
         targetData[7] = abi.encodeWithSignature(
             "swapExactYtForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             10e18,
             0,
@@ -524,7 +524,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[8] = abi.encodeWithSignature(
             "swapExactPtForYt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1e18,
             0,
@@ -532,7 +532,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[9] = abi.encodeWithSignature(
             "addLiquidityDualSyAndPt(address,address,uint256,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             1e18,
             1e18,
@@ -540,7 +540,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[10] = abi.encodeWithSignature(
             "removeLiquidityDualSyAndPt(address,address,uint256,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarket"),
             0.1e18,
             0,
@@ -548,7 +548,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[11] = abi.encodeWithSignature(
             "redeemPyToSy(address,address,uint256,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleEethYt"),
             0.1e18,
             0
@@ -558,7 +558,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[12] = abi.encodeWithSignature(
             "redeemSyToToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             1e18,
             tokenOutput
@@ -587,7 +587,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
@@ -606,7 +606,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[5] = abi.encodeWithSignature(
             "mintSyFromToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             0,
             tokenInput
@@ -618,7 +618,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[12] = abi.encodeWithSignature(
             "redeemSyToToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             1e18,
             tokenOutput
@@ -637,7 +637,7 @@ contract PendleIntegrationTest is Test, MerkleTreeHelper {
         );
         targetData[12] = abi.encodeWithSignature(
             "redeemSyToToken(address,address,uint256,(address,uint256,address,address,(uint8,address,bytes,bool)))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeethSy"),
             1e18,
             tokenOutput

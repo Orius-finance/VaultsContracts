@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -21,14 +21,14 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
     uint8 public constant MANAGER_ROLE = 1;
     uint8 public constant STRATEGIST_ROLE = 2; uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -39,33 +39,33 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new BTCNFullMinterDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new BTCNFullMinterDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -86,7 +86,7 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -97,7 +97,7 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
@@ -110,8 +110,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
 
         //initialize so we can swap
         //ISwapFacility(cornSwap).initialize(
-        //    getAddress(sourceChain, "boringVault"),
-        //    getAddress(sourceChain, "boringVault"),
+        //    getAddress(sourceChain, "oriusVault"),
+        //    getAddress(sourceChain, "oriusVault"),
         //    0,
         //    0,
         //    100_000_000e18
@@ -122,8 +122,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
         //address admin = 0xaD2Bef31Db723b8ad1B9BCa41b0F1EBAfD1193d1;
         //address operator = 0x3964e3572505C1bF51496f9129249E77F55fD044;
         //vm.startPrank(admin);
-        //IRolesAuthority(authority).setUserRole(address(boringVault), 11, true);
-        //IRolesAuthority(authority).setUserRole(address(boringVault), 12, true);
+        //IRolesAuthority(authority).setUserRole(address(oriusVault), 11, true);
+        //IRolesAuthority(authority).setUserRole(address(oriusVault), 12, true);
         //vm.stopPrank();
 
         //vm.startPrank(operator);
@@ -134,8 +134,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
         assertEq(ISwapFacility(cornSwap).swapInEnabled(), true);
         assertEq(ISwapFacility(cornSwap).swapOutEnabled(), true);
 
-        deal(getAddress(sourceChain, "WBTC"), address(boringVault), 10000e18);
-        deal(getAddress(sourceChain, "BTCN"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WBTC"), address(oriusVault), 10000e18);
+        deal(getAddress(sourceChain, "BTCN"), address(oriusVault), 100e18);
         
         console.log("debtMinted:", ISwapFacility(cornSwap).debtMinted());
         console.log("debtMintCap:", ISwapFacility(cornSwap).debtMintCap());
@@ -175,14 +175,14 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
             "swapExactCollateralForDebt(uint256,uint256,address,uint256)",
             1e6,
             0,
-            getAddress(sourceChain, "boringVault"),
+            getAddress(sourceChain, "oriusVault"),
             block.timestamp + 1
         );
         targetData[3] = abi.encodeWithSignature(
             "swapExactDebtForCollateral(uint256,uint256,address,uint256)",
             1e18, //we should get 1:1, I think
             0,
-            getAddress(sourceChain, "boringVault"),
+            getAddress(sourceChain, "oriusVault"),
             1734370282 + 10000
         );
 
@@ -205,8 +205,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
 
         //initialize so we can swap
         //ISwapFacility(cornSwap).initialize(
-        //    getAddress(sourceChain, "boringVault"),
-        //    getAddress(sourceChain, "boringVault"),
+        //    getAddress(sourceChain, "oriusVault"),
+        //    getAddress(sourceChain, "oriusVault"),
         //    0,
         //    0,
         //    100_000_000e18
@@ -217,8 +217,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
         //address admin = 0xaD2Bef31Db723b8ad1B9BCa41b0F1EBAfD1193d1;
         //address operator = 0x3964e3572505C1bF51496f9129249E77F55fD044;
         //vm.startPrank(admin);
-        //IRolesAuthority(authority).setUserRole(address(boringVault), 11, true);
-        //IRolesAuthority(authority).setUserRole(address(boringVault), 12, true);
+        //IRolesAuthority(authority).setUserRole(address(oriusVault), 11, true);
+        //IRolesAuthority(authority).setUserRole(address(oriusVault), 12, true);
         //vm.stopPrank();
 
         //vm.startPrank(operator);
@@ -229,8 +229,8 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
         assertEq(ISwapFacility(cornSwap).swapInEnabled(), true);
         assertEq(ISwapFacility(cornSwap).swapOutEnabled(), true);
 
-        deal(getAddress(sourceChain, "cbBTC"), address(boringVault), 10000e18);
-        deal(getAddress(sourceChain, "BTCN"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "cbBTC"), address(oriusVault), 10000e18);
+        deal(getAddress(sourceChain, "BTCN"), address(oriusVault), 100e18);
         
         console.log("debtMinted:", ISwapFacility(cornSwap).debtMinted());
         console.log("debtMintCap:", ISwapFacility(cornSwap).debtMintCap());
@@ -270,14 +270,14 @@ contract BTCNMinterIntegrationTest is Test, MerkleTreeHelper {
             "swapExactCollateralForDebt(uint256,uint256,address,uint256)",
             1e8,
             0,
-            getAddress(sourceChain, "boringVault"),
+            getAddress(sourceChain, "oriusVault"),
             block.timestamp + 1
         );
         targetData[3] = abi.encodeWithSignature(
             "swapExactDebtForCollateral(uint256,uint256,address,uint256)",
             1e18, //we should get 1:1, I think
             0,
-            getAddress(sourceChain, "boringVault"),
+            getAddress(sourceChain, "oriusVault"),
             1734370282 + 10000
         );
 

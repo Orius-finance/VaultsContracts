@@ -46,7 +46,7 @@ abstract contract VelodromeDecoderAndSanitizer is BaseDecoderAndSanitizer {
         returns (bytes memory addressesFound)
     {
         // Sanitize raw data
-        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert VelodromeDecoderAndSanitizer__BadTokenId();
         }
         // Extract addresses from VelodromeNonFungiblePositionManager.positions(params.tokenId).
@@ -64,7 +64,7 @@ abstract contract VelodromeDecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert VelodromeDecoderAndSanitizer__BadTokenId();
         }
 
@@ -81,7 +81,7 @@ abstract contract VelodromeDecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (velodromeNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert VelodromeDecoderAndSanitizer__BadTokenId();
         }
 

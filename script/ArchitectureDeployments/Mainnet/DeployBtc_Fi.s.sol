@@ -18,9 +18,9 @@ contract DeployBtc_FiScript is DeployArcticArchitecture, MainnetAddresses {
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "BTC-Fi Yield Vault LP";
-    string public boringVaultSymbol = "BTC-Fi Yield Vault LP";
-    uint8 public boringVaultDecimals = 8;
+    string public oriusVaultName = "BTC-Fi Yield Vault LP";
+    string public oriusVaultSymbol = "BTC-Fi Yield Vault LP";
+    uint8 public oriusVaultDecimals = 8;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployBtc_FiScript is DeployArcticArchitecture, MainnetAddresses {
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = Btc_FiRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = Btc_FiName;
+        names .oriusVault = Btc_FiName;
         names.manager = Btc_FiManagerName;
         names.accountant = Btc_FiAccountantName;
         names.teller = Btc_FiTellerName;
@@ -70,7 +70,7 @@ contract DeployBtc_FiScript is DeployArcticArchitecture, MainnetAddresses {
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(BTCFiDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         depositAssets.push(
@@ -157,9 +157,9 @@ contract DeployBtc_FiScript is DeployArcticArchitecture, MainnetAddresses {
         _deploy(
             "BTC-FiDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

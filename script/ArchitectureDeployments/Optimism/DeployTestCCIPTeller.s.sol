@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 import {ChainlinkCCIPTeller} from "src/base/Roles/CrossChain/Bridges/CCIP/ChainlinkCCIPTeller.sol";
 import {OptimismAddresses} from "test/resources/OptimismAddresses.sol";
 import {Deployer} from "src/helper/Deployer.sol";
-import {BoringVault, Auth} from "src/base/BoringVault.sol";
+import {OriusVault, Auth} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthority.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
@@ -22,7 +22,7 @@ contract DeployTestCCIPTellerScript is Script, OptimismAddresses, ContractNames 
 
     Deployer public deployer = Deployer(deployerAddress);
     RolesAuthority public rolesAuthority;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     AccountantWithRateProviders public accountant;
     ChainlinkCCIPTeller public teller;
 
@@ -36,7 +36,7 @@ contract DeployTestCCIPTellerScript is Script, OptimismAddresses, ContractNames 
         privateKey = vm.envUint("ETHERFI_LIQUID_DEPLOYER");
         vm.createSelectFork("optimism");
         rolesAuthority = RolesAuthority(deployer.getAddress(BridgingTestVaultEthRolesAuthorityName));
-        boringVault = BoringVault(payable(deployer.getAddress(BridgingTestVaultEthName)));
+        oriusVault = OriusVault(payable(deployer.getAddress(BridgingTestVaultEthName)));
         accountant = AccountantWithRateProviders(deployer.getAddress(BridgingTestVaultEthAccountantName));
         teller = ChainlinkCCIPTeller(deployer.getAddress(TestCCIPTellerName));
     }
@@ -46,7 +46,7 @@ contract DeployTestCCIPTellerScript is Script, OptimismAddresses, ContractNames 
 
         bytes memory creationCode = type(ChainlinkCCIPTeller).creationCode;
         bytes memory constructorArgs =
-            abi.encode(dev0Address, address(boringVault), address(accountant), WETH, ccipRouter);
+            abi.encode(dev0Address, address(oriusVault), address(accountant), WETH, ccipRouter);
 
         teller = ChainlinkCCIPTeller(deployer.deployContract(TestCCIPTellerName, creationCode, constructorArgs, 0));
 

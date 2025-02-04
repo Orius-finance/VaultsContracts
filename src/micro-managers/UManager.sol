@@ -58,13 +58,13 @@ abstract contract UManager is Auth {
     ManagerWithMerkleVerification internal immutable manager;
 
     /**
-     * @notice The BoringVault this uManager works with.
+     * @notice The OriusVault this uManager works with.
      */
-    address internal immutable boringVault;
+    address internal immutable oriusVault;
 
-    constructor(address _owner, address _manager, address _boringVault) Auth(_owner, Authority(address(0))) {
+    constructor(address _owner, address _manager, address _oriusVault) Auth(_owner, Authority(address(0))) {
         manager = ManagerWithMerkleVerification(_manager);
-        boringVault = _boringVault;
+        oriusVault = _oriusVault;
     }
 
     // ========================================= ADMIN FUNCTIONS =========================================

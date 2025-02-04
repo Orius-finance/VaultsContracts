@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthority.sol";
 import {SymbioticUManager, DefaultCollateral} from "src/micro-managers/SymbioticUManager.sol";
@@ -19,7 +19,7 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault = BoringVault(payable(0x917ceE801a67f933F2e6b33fC0cD1ED2d5909D88));
+    OriusVault public oriusVault = OriusVault(payable(0x917ceE801a67f933F2e6b33fC0cD1ED2d5909D88));
     ManagerWithMerkleVerification public manager =
         ManagerWithMerkleVerification(0xA24dD7B978Fbe36125cC4817192f7b8AA18d213c);
     address public managerAddress = 0xA24dD7B978Fbe36125cC4817192f7b8AA18d213c;
@@ -41,10 +41,10 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
 
         dev1Address = 0x2322ba43eFF1542b6A7bAeD35e66099Ea0d12Bd1;
 
-        symbioticUManager = new SymbioticUManager(address(this), rolesAuthority, address(manager), address(boringVault));
+        symbioticUManager = new SymbioticUManager(address(this), rolesAuthority, address(manager), address(oriusVault));
 
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", address(boringVault));
+        setAddress(false, mainnet, "oriusVault", address(oriusVault));
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -70,7 +70,7 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
 
         // Force Whale to remove 10,000 collateral.
         vm.prank(wstETHSymbioticWhale);
-        DefaultCollateral(wstETHDefaultCollateral).withdraw(address(boringVault), 10_000e18);
+        DefaultCollateral(wstETHDefaultCollateral).withdraw(address(oriusVault), 10_000e18);
 
         symbioticUManager.setConfiguration(DefaultCollateral(wstETHDefaultCollateral), 1, rawDataDecoderAndSanitizer);
     }
@@ -78,14 +78,14 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
     function testSniperBotSpecifiedAmountNoApproval(uint256 amount) external {
         amount = bound(amount, 2, 10_000e18);
         // In a previous transaction, strategist has approved default collateral to spend wstETH.
-        vm.prank(address(boringVault));
+        vm.prank(address(oriusVault));
         WSTETH.approve(wstETHDefaultCollateral, type(uint256).max);
         DefaultCollateral defaultCollateral = DefaultCollateral(wstETHDefaultCollateral);
 
         // Sniper bot deposits 10,000 wstETH.
         symbioticUManager.assemble(defaultCollateral, amount);
 
-        assertEq(defaultCollateral.balanceOf(address(boringVault)), amount, "BoringVault should have deposited amount");
+        assertEq(defaultCollateral.balanceOf(address(oriusVault)), amount, "OriusVault should have deposited amount");
     }
 
     function testSniperBotSpecifiedAmountWithApproval(uint256 amount) external {
@@ -95,9 +95,9 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         // Sniper bot deposits approves, then 10,000 wstETH.
         symbioticUManager.assemble(defaultCollateral, amount);
 
-        assertEq(defaultCollateral.balanceOf(address(boringVault)), amount, "BoringVault should have deposited amount");
+        assertEq(defaultCollateral.balanceOf(address(oriusVault)), amount, "OriusVault should have deposited amount");
         assertEq(
-            WSTETH.allowance(address(boringVault), wstETHDefaultCollateral),
+            WSTETH.allowance(address(oriusVault), wstETHDefaultCollateral),
             0,
             "Default Collateral should have no allowance"
         );
@@ -107,11 +107,11 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         amount = bound(amount, 2, 10_000e18);
         uint256 wstETHBalance = amount / 2;
 
-        // Make BoringVaults wstETH balance equal wstETHBalance.
-        deal(address(WSTETH), address(boringVault), wstETHBalance);
+        // Make OriusVaults wstETH balance equal wstETHBalance.
+        deal(address(WSTETH), address(oriusVault), wstETHBalance);
 
         // In a previous transaction, strategist has approved default collateral to spend wstETH.
-        vm.prank(address(boringVault));
+        vm.prank(address(oriusVault));
         WSTETH.approve(wstETHDefaultCollateral, type(uint256).max);
         DefaultCollateral defaultCollateral = DefaultCollateral(wstETHDefaultCollateral);
 
@@ -119,9 +119,9 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         symbioticUManager.fullAssemble(defaultCollateral);
 
         assertEq(
-            defaultCollateral.balanceOf(address(boringVault)),
+            defaultCollateral.balanceOf(address(oriusVault)),
             wstETHBalance,
-            "BoringVault should have deposited wstETHBalance"
+            "OriusVault should have deposited wstETHBalance"
         );
     }
 
@@ -129,8 +129,8 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         amount = bound(amount, 2, 10_000e18);
         uint256 wstETHBalance = amount / 2;
 
-        // Make BoringVaults wstETH balance equal wstETHBalance.
-        deal(address(WSTETH), address(boringVault), wstETHBalance);
+        // Make OriusVaults wstETH balance equal wstETHBalance.
+        deal(address(WSTETH), address(oriusVault), wstETHBalance);
 
         DefaultCollateral defaultCollateral = DefaultCollateral(wstETHDefaultCollateral);
 
@@ -138,12 +138,12 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         symbioticUManager.fullAssemble(defaultCollateral);
 
         assertEq(
-            defaultCollateral.balanceOf(address(boringVault)),
+            defaultCollateral.balanceOf(address(oriusVault)),
             wstETHBalance,
-            "BoringVault should have deposited wstETHBalance"
+            "OriusVault should have deposited wstETHBalance"
         );
         assertEq(
-            WSTETH.allowance(address(boringVault), wstETHDefaultCollateral),
+            WSTETH.allowance(address(oriusVault), wstETHDefaultCollateral),
             0,
             "Default Collateral should have no allowance"
         );
@@ -153,11 +153,11 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         wstETHBalance = bound(wstETHBalance, 10_000e18, 100_000e18);
         uint256 collateralLimit = 10_000e18;
 
-        // Make BoringVaults wstETH balance equal wstETHBalance.
-        deal(address(WSTETH), address(boringVault), wstETHBalance);
+        // Make OriusVaults wstETH balance equal wstETHBalance.
+        deal(address(WSTETH), address(oriusVault), wstETHBalance);
 
         // In a previous transaction, strategist has approved default collateral to spend wstETH.
-        vm.prank(address(boringVault));
+        vm.prank(address(oriusVault));
         WSTETH.approve(wstETHDefaultCollateral, type(uint256).max);
         DefaultCollateral defaultCollateral = DefaultCollateral(wstETHDefaultCollateral);
 
@@ -165,9 +165,9 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         symbioticUManager.fullAssemble(defaultCollateral);
 
         assertEq(
-            defaultCollateral.balanceOf(address(boringVault)),
+            defaultCollateral.balanceOf(address(oriusVault)),
             collateralLimit,
-            "BoringVault should have deposited collateralLimit"
+            "OriusVault should have deposited collateralLimit"
         );
     }
 
@@ -175,8 +175,8 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         wstETHBalance = bound(wstETHBalance, 10_000e18, 100_000e18);
         uint256 collateralLimit = 10_000e18;
 
-        // Make BoringVaults wstETH balance equal wstETHBalance.
-        deal(address(WSTETH), address(boringVault), wstETHBalance);
+        // Make OriusVaults wstETH balance equal wstETHBalance.
+        deal(address(WSTETH), address(oriusVault), wstETHBalance);
 
         DefaultCollateral defaultCollateral = DefaultCollateral(wstETHDefaultCollateral);
 
@@ -184,12 +184,12 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         symbioticUManager.fullAssemble(defaultCollateral);
 
         assertEq(
-            defaultCollateral.balanceOf(address(boringVault)),
+            defaultCollateral.balanceOf(address(oriusVault)),
             collateralLimit,
-            "BoringVault should have deposited collateralLimit"
+            "OriusVault should have deposited collateralLimit"
         );
         assertEq(
-            WSTETH.allowance(address(boringVault), wstETHDefaultCollateral),
+            WSTETH.allowance(address(oriusVault), wstETHDefaultCollateral),
             0,
             "Default Collateral should have no allowance"
         );
@@ -282,8 +282,8 @@ contract SymbioticUManagerTest is Test, MainnetAddresses, MerkleTreeHelper {
         );
         symbioticUManager.assemble(defaultCollateral, limitDelta);
 
-        // Give BoringVault some mETH.
-        deal(address(METH), address(boringVault), 10_000e18);
+        // Give OriusVault some mETH.
+        deal(address(METH), address(oriusVault), 10_000e18);
 
         // Sniper bot tries full assembling, but limit delta is less than minimum deposit.
         vm.expectRevert(

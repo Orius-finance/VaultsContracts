@@ -35,7 +35,7 @@
   },
   "core": {
     "AccountantWithRateProviders": "0xcB762D7bedfA78c725f2F347220d41062b6B0A4A",
-    "BoringVault": "0x91588c197BdD947bd4966E33728db03cD52CbA24",
+    "OriusVault": "0x91588c197BdD947bd4966E33728db03cD52CbA24",
     "DecoderAndSanitizer": "0x7704820fCcD83Be3F625154C3460da0b6672e53b",
     "DelayedWithdraw": "0x6eBaC2eFDF215d04F1f78070cBb08722a3fa5517",
     "Lens": "0x5232bc0F5999f8dA604c42E1748A13a170F94A1B",

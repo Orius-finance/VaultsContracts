@@ -19,9 +19,9 @@ contract DeployTestVaultScript is DeployArcticArchitecture, MainnetAddresses {
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Test Vault";
-    string public boringVaultSymbol = "TEV";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Test Vault";
+    string public oriusVaultSymbol = "TEV";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -33,7 +33,7 @@ contract DeployTestVaultScript is DeployArcticArchitecture, MainnetAddresses {
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = TestVaultEthRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = TestVaultEthName;
+        names .oriusVault = TestVaultEthName;
         names.manager = TestVaultEthManagerName;
         names.accountant = TestVaultEthAccountantName;
         names.teller = TestVaultEthTellerName;
@@ -58,7 +58,7 @@ contract DeployTestVaultScript is DeployArcticArchitecture, MainnetAddresses {
 
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(ITBPositionDecoderAndSanitizer).creationCode;
-        bytes memory constructorArgs = abi.encode(deployer.getAddress(names.boringVault));
+        bytes memory constructorArgs = abi.encode(deployer.getAddress(names .oriusVault));
 
         // Setup extra deposit assets.
         // none
@@ -84,9 +84,9 @@ contract DeployTestVaultScript is DeployArcticArchitecture, MainnetAddresses {
         _deploy(
             "TestVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -27,7 +27,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
     PriceRouter public priceRouter = PriceRouter(0xAB2d48358D41980eee1cb93764f45148F6818964);
@@ -37,7 +37,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -46,31 +46,31 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
         uint256 blockNumber = 19513510;
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        manager = new ManagerWithMerkleVerification(address(this), address(boringVault), vault);
+        manager = new ManagerWithMerkleVerification(address(this), address(oriusVault), vault);
 
         rawDataDecoderAndSanitizer =
-            address(new EtherFiLiquidDecoderAndSanitizer(address(boringVault), uniswapV3NonFungiblePositionManager));
+            address(new EtherFiLiquidDecoderAndSanitizer(address(oriusVault), uniswapV3NonFungiblePositionManager));
 
         dexAggregatorUManager = new DexAggregatorUManager(
-            address(this), address(manager), address(boringVault), aggregationRouterV5, address(priceRouter)
+            address(this), address(manager), address(oriusVault), aggregationRouterV5, address(priceRouter)
         );
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -91,7 +91,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -103,7 +103,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(vault, BALANCER_VAULT_ROLE, true);
 
         dexAggregatorUManager.setPeriod(300);
@@ -111,7 +111,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
     }
 
     function testDexAggregatorUManager() external {
-        deal(address(WETH), address(boringVault), 10_000e18);
+        deal(address(WETH), address(oriusVault), 10_000e18);
 
         dexAggregatorUManager.setAllowedSlippage(0.01e4);
         // Make sure the vault can
@@ -150,7 +150,7 @@ contract DexAggregatorUManagerTest is Test, MainnetAddresses {
         // The swap works. Even with excess amount.
         dexAggregatorUManager.swapWith1Inch(manageProofs, decodersAndSanitizers, WETH, 101e18, WEETH, swapData);
 
-        assertEq(WETH.allowance(address(boringVault), aggregationRouterV5), 0, "Allowance should have been revoked.");
+        assertEq(WETH.allowance(address(oriusVault), aggregationRouterV5), 0, "Allowance should have been revoked.");
 
         uint256 swapCount = dexAggregatorUManager.callCountPerPeriod(block.timestamp % 300);
         assertEq(swapCount, 1, "Swap count should have been incremented.");

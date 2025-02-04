@@ -28,8 +28,8 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
      * @notice The Solve Type, used in `finishSolve` to determine the logic used.
      * @notice P2P Solver wants to swap share.asset() for user(s) shares
      * @notice REDEEM Solver needs to redeem shares, then can cover user(s) required assets.
-     * @notice MIGRATION_REDEEM Solver needs to redeem Cellar shares for BoringVault shares, then withdraw from BoringVault.
-     * @dev DO NOT USE MIGRATION_REDEEM IF `offer` Cellar does not exclusively hold BoringVault shares.
+     * @notice MIGRATION_REDEEM Solver needs to redeem Cellar shares for OriusVault shares, then withdraw from OriusVault.
+     * @dev DO NOT USE MIGRATION_REDEEM IF `offer` Cellar does not exclusively hold OriusVault shares.
      */
     enum SolveType {
         P2P,
@@ -44,8 +44,8 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
     error AtomicSolverV4___FailedToSolve();
     error AtomicSolverV4___SolveMaxAssetsExceeded(uint256 actualAssets, uint256 maxAssets);
     error AtomicSolverV4___P2PSolveMinSharesNotMet(uint256 actualShares, uint256 minShares);
-    error AtomicSolverV4___BoringVaultTellerMismatch(address vault, address teller);
-    error AtomicSolverV4___NoBoringVaultSharesReceived();
+    error AtomicSolverV4___OriusVaultTellerMismatch(address vault, address teller);
+    error AtomicSolverV4___NoOriusVaultSharesReceived();
 
     //============================== IMMUTABLES ===============================
 
@@ -56,7 +56,7 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
     /**
      * @notice Allows the owner to rescue tokens from the contract.
      * @dev This should not normally be used, but it is possible that when performing a MIGRATION_REDEEM,
-     *      the redemption of Cellar shares will return assets other than BoringVault shares.
+     *      the redemption of Cellar shares will return assets other than OriusVault shares.
      *      If the amount of assets is significant, it is very likely the solve will revert, but it is
      *      not guaranteed to revert, hence this function.
      */
@@ -204,7 +204,7 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
             abi.decode(runData, (SolveType, address, uint256, uint256, TellerWithMultiAssetSupport));
 
         if (address(offer) != address(teller.vault())) {
-            revert AtomicSolverV4___BoringVaultTellerMismatch(address(offer), address(teller));
+            revert AtomicSolverV4___OriusVaultTellerMismatch(address(offer), address(teller));
         }
         // Make sure solvers `maxAssets` was not exceeded.
         if (wantApprovalAmount > maxAssets) {
@@ -223,7 +223,7 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
 
     /**
      * @notice Helper function containing the logic to handle migration redeem solves.
-     * @dev DO NOT USE THIS FUNCTION IF `offer` Cellar does not exclusively hold BoringVault shares.
+     * @dev DO NOT USE THIS FUNCTION IF `offer` Cellar does not exclusively hold OriusVault shares.
      */
     function _migrationRedeemSolve(
         address queue,
@@ -241,19 +241,19 @@ contract AtomicSolverV4 is IAtomicSolver, Auth, Multicall {
             revert AtomicSolverV4___SolveMaxAssetsExceeded(wantApprovalAmount, maxAssets);
         }
 
-        ERC20 boringVaultShare = ERC20(teller.vault());
+        ERC20 oriusVaultShare = ERC20(teller.vault());
 
-        // Offer is Cellar share, so redeem it to get BoringVault shares.
-        uint256 bvShareDelta = boringVaultShare.balanceOf(address(this));
+        // Offer is Cellar share, so redeem it to get OriusVault shares.
+        uint256 bvShareDelta = oriusVaultShare.balanceOf(address(this));
         ERC4626(address(offer)).redeem(offerReceived, address(this), address(this));
-        bvShareDelta = boringVaultShare.balanceOf(address(this)) - bvShareDelta;
+        bvShareDelta = oriusVaultShare.balanceOf(address(this)) - bvShareDelta;
 
-        // Make sure we received BoringVault shares.
+        // Make sure we received OriusVault shares.
         if (bvShareDelta == 0) {
-            revert AtomicSolverV4___NoBoringVaultSharesReceived();
+            revert AtomicSolverV4___NoOriusVaultSharesReceived();
         }
 
-        // Withdraw the BoringVault shares, sending assets to solver.
+        // Withdraw the OriusVault shares, sending assets to solver.
         teller.bulkWithdraw(want, bvShareDelta, minimumAssetsOut, solver);
 
         // Transfer required assets from solver.

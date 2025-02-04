@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -44,33 +44,33 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new BTCFiDecoderAndSanitizer(address(boringVault), address(0)));
+        rawDataDecoderAndSanitizer = address(new BTCFiDecoderAndSanitizer(address(oriusVault), address(0)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -91,7 +91,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -102,12 +102,12 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testPumpStakingIntegrationStake() external {
-        deal(getAddress(sourceChain, "WBTC"), address(boringVault), 10e8);
+        deal(getAddress(sourceChain, "WBTC"), address(oriusVault), 10e8);
 
         // approve
         // Call deposit
@@ -145,9 +145,9 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "pumpBTC").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "pumpBTC").balanceOf(address(oriusVault)),
             10e8,
-            "BoringVault should have received 10 pumpBTC"
+            "OriusVault should have received 10 pumpBTC"
         );
     }
 
@@ -160,7 +160,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         ps.setOperator(address(this));
         vm.stopPrank();
 
-        deal(getAddress(sourceChain, "pumpBTC"), address(boringVault), 10e8);
+        deal(getAddress(sourceChain, "pumpBTC"), address(oriusVault), 10e8);
         deal(getAddress(sourceChain, "WBTC"), address(this), 10e8);
 
         // approve
@@ -193,7 +193,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "pumpBTC").balanceOf(address(boringVault)), 0, "BoringVault should have zero pumpBTC"
+            getERC20(sourceChain, "pumpBTC").balanceOf(address(oriusVault)), 0, "OriusVault should have zero pumpBTC"
         );
 
         skip(10 days);
@@ -214,7 +214,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WBTC").balanceOf(address(boringVault)), 10e8, "BoringVault should have 10e8 wBTC"
+            getERC20(sourceChain, "WBTC").balanceOf(address(oriusVault)), 10e8, "OriusVault should have 10e8 wBTC"
         );
 
         vm.revertTo(beforeClaim);
@@ -229,7 +229,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WBTC").balanceOf(address(boringVault)), 10e8, "BoringVault should have 10e8 wBTC"
+            getERC20(sourceChain, "WBTC").balanceOf(address(oriusVault)), 10e8, "OriusVault should have 10e8 wBTC"
         );
     }
 
@@ -240,7 +240,7 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         vm.prank(owner);
         ps.setOnlyAllowStake(false);
 
-        deal(getAddress(sourceChain, "WBTC"), getAddress(sourceChain, "boringVault"), 10e8);
+        deal(getAddress(sourceChain, "WBTC"), getAddress(sourceChain, "oriusVault"), 10e8);
 
         // approve
         // Call deposit
@@ -282,11 +282,11 @@ contract PumpStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "pumpBTC").balanceOf(address(boringVault)), 0, "BoringVault should have zero pumpBTC"
+            getERC20(sourceChain, "pumpBTC").balanceOf(address(oriusVault)), 0, "OriusVault should have zero pumpBTC"
         );
 
         assertEq(
-            getERC20(sourceChain, "WBTC").balanceOf(address(boringVault)), 9.7e8, "BoringVault should have 10e8 wBTC"
+            getERC20(sourceChain, "WBTC").balanceOf(address(oriusVault)), 9.7e8, "OriusVault should have 10e8 wBTC"
         );
     }
 

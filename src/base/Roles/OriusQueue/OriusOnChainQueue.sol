@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -12,11 +12,11 @@ import {Auth, Authority} from "@solmate/auth/Auth.sol";
 import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import {IBoringSolver} from "src/base/Roles/BoringQueue/IBoringSolver.sol";
+import {IOriusSolver} from "src/base/Roles/OriusQueue/IOriusSolver.sol";
 
-contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
+contract OriusOnChainQueue is Auth, ReentrancyGuard, IPausable {
     using EnumerableSet for EnumerableSet.Bytes32Set;
-    using SafeTransferLib for BoringVault;
+    using SafeTransferLib for OriusVault;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -82,7 +82,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
      * @notice Ensure that the request user is the same as the message sender.
      */
     modifier onlyRequestUser(address requestUser, address msgSender) {
-        if (requestUser != msgSender) revert BoringOnChainQueue__BadUser();
+        if (requestUser != msgSender) revert OriusOnChainQueue__BadUser();
         _;
     }
 
@@ -116,24 +116,24 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
 
     //============================== ERRORS ===============================
 
-    error BoringOnChainQueue__Paused();
-    error BoringOnChainQueue__WithdrawsNotAllowedForAsset();
-    error BoringOnChainQueue__BadDiscount();
-    error BoringOnChainQueue__BadShareAmount();
-    error BoringOnChainQueue__BadDeadline();
-    error BoringOnChainQueue__BadUser();
-    error BoringOnChainQueue__DeadlinePassed();
-    error BoringOnChainQueue__NotMatured();
-    error BoringOnChainQueue__Keccak256Collision();
-    error BoringOnChainQueue__RequestNotFound();
-    error BoringOnChainQueue__PermitFailedAndAllowanceTooLow();
-    error BoringOnChainQueue__MAX_DISCOUNT();
-    error BoringOnChainQueue__MAXIMUM_MINIMUM_SECONDS_TO_DEADLINE();
-    error BoringOnChainQueue__SolveAssetMismatch();
-    error BoringOnChainQueue__Overflow();
-    error BoringOnChainQueue__MAXIMUM_SECONDS_TO_MATURITY();
-    error BoringOnChainQueue__BadInput();
-    error BoringOnChainQueue__RescueCannotTakeSharesFromActiveRequests();
+    error OriusOnChainQueue__Paused();
+    error OriusOnChainQueue__WithdrawsNotAllowedForAsset();
+    error OriusOnChainQueue__BadDiscount();
+    error OriusOnChainQueue__BadShareAmount();
+    error OriusOnChainQueue__BadDeadline();
+    error OriusOnChainQueue__BadUser();
+    error OriusOnChainQueue__DeadlinePassed();
+    error OriusOnChainQueue__NotMatured();
+    error OriusOnChainQueue__Keccak256Collision();
+    error OriusOnChainQueue__RequestNotFound();
+    error OriusOnChainQueue__PermitFailedAndAllowanceTooLow();
+    error OriusOnChainQueue__MAX_DISCOUNT();
+    error OriusOnChainQueue__MAXIMUM_MINIMUM_SECONDS_TO_DEADLINE();
+    error OriusOnChainQueue__SolveAssetMismatch();
+    error OriusOnChainQueue__Overflow();
+    error OriusOnChainQueue__MAXIMUM_SECONDS_TO_MATURITY();
+    error OriusOnChainQueue__BadInput();
+    error OriusOnChainQueue__RescueCannotTakeSharesFromActiveRequests();
 
     //============================== EVENTS ===============================
 
@@ -180,9 +180,9 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
     //============================== IMMUTABLES ===============================
 
     /**
-     * @notice The BoringVault contract to withdraw from.
+     * @notice The OriusVault contract to withdraw from.
      */
-    BoringVault public immutable boringVault;
+    OriusVault public immutable oriusVault;
 
     /**
      * @notice The AccountantWithRateProviders contract to get rates from.
@@ -190,15 +190,15 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
     AccountantWithRateProviders public immutable accountant;
 
     /**
-     * @notice One BoringVault share.
+     * @notice One OriusVault share.
      */
     uint256 public immutable ONE_SHARE;
 
-    constructor(address _owner, address _auth, address payable _boringVault, address _accountant)
+    constructor(address _owner, address _auth, address payable _oriusVault, address _accountant)
         Auth(_owner, Authority(_auth))
     {
-        boringVault = BoringVault(_boringVault);
-        ONE_SHARE = 10 ** boringVault.decimals();
+        oriusVault = OriusVault(_oriusVault);
+        ONE_SHARE = 10 ** oriusVault.decimals();
         accountant = AccountantWithRateProviders(_accountant);
     }
 
@@ -206,7 +206,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
 
     /**
      * @notice Allows the owner to rescue tokens from the contract.
-     * @dev The owner can only withdraw BoringVault shares if they are accidentally sent to this contract.
+     * @dev The owner can only withdraw OriusVault shares if they are accidentally sent to this contract.
      *      Shares from active withdraw requests are not withdrawable.
      * @param token The token to rescue.
      * @param amount The amount to rescue.
@@ -218,20 +218,20 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         external
         requiresAuth
     {
-        if (address(token) == address(boringVault)) {
+        if (address(token) == address(oriusVault)) {
             bytes32[] memory requestIds = _withdrawRequests.values();
             uint256 requestIdsLength = requestIds.length;
-            if (activeRequests.length != requestIdsLength) revert BoringOnChainQueue__BadInput();
+            if (activeRequests.length != requestIdsLength) revert OriusOnChainQueue__BadInput();
             // Iterate through provided activeRequests, and hash each one to compare to the requestIds.
             // Also track the sum of shares to make sure it is less than or equal to the amount.
             uint256 activeRequestShareSum;
             for (uint256 i = 0; i < requestIdsLength; ++i) {
-                if (keccak256(abi.encode(activeRequests[i])) != requestIds[i]) revert BoringOnChainQueue__BadInput();
+                if (keccak256(abi.encode(activeRequests[i])) != requestIds[i]) revert OriusOnChainQueue__BadInput();
                 activeRequestShareSum += activeRequests[i].amountOfShares;
             }
-            uint256 freeShares = boringVault.balanceOf(address(this)) - activeRequestShareSum;
+            uint256 freeShares = oriusVault.balanceOf(address(this)) - activeRequestShareSum;
             if (amount == type(uint256).max) amount = freeShares;
-            else if (amount > freeShares) revert BoringOnChainQueue__RescueCannotTakeSharesFromActiveRequests();
+            else if (amount > freeShares) revert OriusOnChainQueue__RescueCannotTakeSharesFromActiveRequests();
         } else {
             if (amount == type(uint256).max) amount = token.balanceOf(address(this));
         }
@@ -277,14 +277,14 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         uint96 minimumShares
     ) external requiresAuth {
         // Validate input.
-        if (maxDiscount > MAX_DISCOUNT) revert BoringOnChainQueue__MAX_DISCOUNT();
+        if (maxDiscount > MAX_DISCOUNT) revert OriusOnChainQueue__MAX_DISCOUNT();
         if (secondsToMaturity > MAXIMUM_SECONDS_TO_MATURITY) {
-            revert BoringOnChainQueue__MAXIMUM_SECONDS_TO_MATURITY();
+            revert OriusOnChainQueue__MAXIMUM_SECONDS_TO_MATURITY();
         }
         if (minimumSecondsToDeadline > MAXIMUM_MINIMUM_SECONDS_TO_DEADLINE) {
-            revert BoringOnChainQueue__MAXIMUM_MINIMUM_SECONDS_TO_DEADLINE();
+            revert OriusOnChainQueue__MAXIMUM_MINIMUM_SECONDS_TO_DEADLINE();
         }
-        if (minDiscount > maxDiscount) revert BoringOnChainQueue__BadDiscount();
+        if (minDiscount > maxDiscount) revert OriusOnChainQueue__BadDiscount();
         // Make sure accountant can price it.
         accountant.getRateInQuoteSafe(ERC20(assetOut));
 
@@ -348,7 +348,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
 
         _beforeNewRequest(withdrawAsset, amountOfShares, discount, secondsToDeadline);
 
-        boringVault.safeTransferFrom(msg.sender, address(this), amountOfShares);
+        oriusVault.safeTransferFrom(msg.sender, address(this), amountOfShares);
 
         (requestId,) = _queueOnChainWithdraw(
             msg.sender, assetOut, amountOfShares, discount, withdrawAsset.secondsToMaturity, secondsToDeadline
@@ -381,14 +381,14 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
 
         _beforeNewRequest(withdrawAsset, amountOfShares, discount, secondsToDeadline);
 
-        try boringVault.permit(msg.sender, address(this), amountOfShares, permitDeadline, v, r, s) {}
+        try oriusVault.permit(msg.sender, address(this), amountOfShares, permitDeadline, v, r, s) {}
         catch {
-            if (boringVault.allowance(msg.sender, address(this)) < amountOfShares) {
-                revert BoringOnChainQueue__PermitFailedAndAllowanceTooLow();
+            if (oriusVault.allowance(msg.sender, address(this)) < amountOfShares) {
+                revert OriusOnChainQueue__PermitFailedAndAllowanceTooLow();
             }
         }
 
-        boringVault.safeTransferFrom(msg.sender, address(this), amountOfShares);
+        oriusVault.safeTransferFrom(msg.sender, address(this), amountOfShares);
 
         (requestId,) = _queueOnChainWithdraw(
             msg.sender, assetOut, amountOfShares, discount, withdrawAsset.secondsToMaturity, secondsToDeadline
@@ -439,18 +439,18 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         external
         requiresAuth
     {
-        if (isPaused) revert BoringOnChainQueue__Paused();
+        if (isPaused) revert OriusOnChainQueue__Paused();
 
         ERC20 solveAsset = ERC20(requests[0].assetOut);
         uint256 requiredAssets;
         uint256 totalShares;
         uint256 requestsLength = requests.length;
         for (uint256 i = 0; i < requestsLength; ++i) {
-            if (address(solveAsset) != requests[i].assetOut) revert BoringOnChainQueue__SolveAssetMismatch();
+            if (address(solveAsset) != requests[i].assetOut) revert OriusOnChainQueue__SolveAssetMismatch();
             uint256 maturity = requests[i].creationTime + requests[i].secondsToMaturity;
-            if (block.timestamp < maturity) revert BoringOnChainQueue__NotMatured();
+            if (block.timestamp < maturity) revert OriusOnChainQueue__NotMatured();
             uint256 deadline = maturity + requests[i].secondsToDeadline;
-            if (block.timestamp > deadline) revert BoringOnChainQueue__DeadlinePassed();
+            if (block.timestamp > deadline) revert OriusOnChainQueue__DeadlinePassed();
             requiredAssets += requests[i].amountOfAssets;
             totalShares += requests[i].amountOfShares;
             bytes32 requestId = _dequeueOnChainWithdraw(requests[i]);
@@ -458,12 +458,12 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         }
 
         // Transfer shares to solver.
-        boringVault.safeTransfer(solver, totalShares);
+        oriusVault.safeTransfer(solver, totalShares);
 
         // Run callback function if data is provided.
         if (solveData.length > 0) {
-            IBoringSolver(solver).boringSolve(
-                msg.sender, address(boringVault), address(solveAsset), totalShares, requiredAssets, solveData
+            IOriusSolver(solver) .oriusSolve(
+                msg.sender, address(oriusVault), address(solveAsset), totalShares, requiredAssets, solveData
             );
         }
 
@@ -503,7 +503,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         uint256 price = accountant.getRateInQuoteSafe(ERC20(assetOut));
         price = price.mulDivDown(1e4 - discount, 1e4);
         uint256 amountOfAssets = uint256(amountOfShares).mulDivDown(price, ONE_SHARE);
-        if (amountOfAssets > type(uint128).max) revert BoringOnChainQueue__Overflow();
+        if (amountOfAssets > type(uint128).max) revert OriusOnChainQueue__Overflow();
         amountOfAssets128 = uint128(amountOfAssets);
     }
 
@@ -522,14 +522,14 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         uint16 discount,
         uint24 secondsToDeadline
     ) internal view virtual {
-        if (isPaused) revert BoringOnChainQueue__Paused();
+        if (isPaused) revert OriusOnChainQueue__Paused();
 
-        if (!withdrawAsset.allowWithdraws) revert BoringOnChainQueue__WithdrawsNotAllowedForAsset();
+        if (!withdrawAsset.allowWithdraws) revert OriusOnChainQueue__WithdrawsNotAllowedForAsset();
         if (discount < withdrawAsset.minDiscount || discount > withdrawAsset.maxDiscount) {
-            revert BoringOnChainQueue__BadDiscount();
+            revert OriusOnChainQueue__BadDiscount();
         }
-        if (amountOfShares < withdrawAsset.minimumShares) revert BoringOnChainQueue__BadShareAmount();
-        if (secondsToDeadline < withdrawAsset.minimumSecondsToDeadline) revert BoringOnChainQueue__BadDeadline();
+        if (amountOfShares < withdrawAsset.minimumShares) revert OriusOnChainQueue__BadShareAmount();
+        if (secondsToDeadline < withdrawAsset.minimumSecondsToDeadline) revert OriusOnChainQueue__BadDeadline();
     }
 
     /**
@@ -554,7 +554,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
      */
     function _cancelOnChainWithdraw(OnChainWithdraw memory request) internal virtual returns (bytes32 requestId) {
         requestId = _dequeueOnChainWithdraw(request);
-        boringVault.safeTransfer(request.user, request.amountOfShares);
+        oriusVault.safeTransfer(request.user, request.amountOfShares);
         emit OnChainWithdrawCancelled(requestId, request.user, block.timestamp);
     }
 
@@ -658,7 +658,7 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
 
         bool addedToSet = _withdrawRequests.add(requestId);
 
-        if (!addedToSet) revert BoringOnChainQueue__Keccak256Collision();
+        if (!addedToSet) revert OriusOnChainQueue__Keccak256Collision();
 
         emit OnChainWithdrawRequested(
             requestId,
@@ -685,6 +685,6 @@ contract BoringOnChainQueue is Auth, ReentrancyGuard, IPausable {
         // Remove request from queue.
         requestId = keccak256(abi.encode(request));
         bool removedFromSet = _withdrawRequests.remove(requestId);
-        if (!removedFromSet) revert BoringOnChainQueue__RequestNotFound();
+        if (!removedFromSet) revert OriusOnChainQueue__RequestNotFound();
     }
 }

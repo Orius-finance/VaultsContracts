@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -43,33 +43,33 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new PointFarmingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new PointFarmingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -90,7 +90,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -101,15 +101,15 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testDepositAndWithdrawingFromKarak() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         _addKarakLeafs(leafs, getAddress(sourceChain, "vaultSupervisor"), getAddress(sourceChain, "kweETH"));
@@ -154,7 +154,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         targetData[5] = abi.encodeWithSignature("startWithdraw((address[],uint256[],address)[])", requests);
 
         address[] memory decodersAndSanitizers = new address[](6);
@@ -183,7 +183,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         DecoderCustomTypes.QueuedWithdrawal[] memory startedWithdrawals = new DecoderCustomTypes.QueuedWithdrawal[](1);
-        startedWithdrawals[0].staker = address(boringVault);
+        startedWithdrawals[0].staker = address(oriusVault);
         startedWithdrawals[0].delegatedTo = address(0);
         startedWithdrawals[0].nonce = 0;
         startedWithdrawals[0].start = start;
@@ -195,17 +195,17 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         decodersAndSanitizers = new address[](1);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
 
-        uint256 weETHBalanceBefore = getERC20(sourceChain, "WEETH").balanceOf(address(boringVault));
+        uint256 weETHBalanceBefore = getERC20(sourceChain, "WEETH").balanceOf(address(oriusVault));
         manager.manageVaultWithMerkleVerification(
             manageProofs, decodersAndSanitizers, targets, targetData, new uint256[](1)
         );
-        uint256 weETHBalanceAfter = getERC20(sourceChain, "WEETH").balanceOf(address(boringVault));
+        uint256 weETHBalanceAfter = getERC20(sourceChain, "WEETH").balanceOf(address(oriusVault));
 
         assertEq(weETHBalanceAfter - weETHBalanceBefore, 1_000e18, "Should have received 1_000e18 WEETH");
     }
 
     function testKarakReverts() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         _addKarakLeafs(leafs, getAddress(sourceChain, "vaultSupervisor"), getAddress(sourceChain, "kweETH"));
@@ -250,7 +250,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         targetData[5] = abi.encodeWithSignature("startWithdraw((address[],uint256[],address)[])", requests);
 
         address[] memory decodersAndSanitizers = new address[](6);
@@ -277,7 +277,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         targetData[5] = abi.encodeWithSignature("startWithdraw((address[],uint256[],address)[])", requests);
 
         vm.expectRevert(
@@ -296,7 +296,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](2);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         targetData[5] = abi.encodeWithSignature("startWithdraw((address[],uint256[],address)[])", requests);
 
         vm.expectRevert(
@@ -315,7 +315,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         targetData[5] = abi.encodeWithSignature("startWithdraw((address[],uint256[],address)[])", requests);
 
         manager.manageVaultWithMerkleVerification(
@@ -336,7 +336,7 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         DecoderCustomTypes.QueuedWithdrawal[] memory startedWithdrawals = new DecoderCustomTypes.QueuedWithdrawal[](2);
-        startedWithdrawals[0].staker = address(boringVault);
+        startedWithdrawals[0].staker = address(oriusVault);
         startedWithdrawals[0].delegatedTo = address(0);
         startedWithdrawals[0].nonce = 0;
         startedWithdrawals[0].start = start;
@@ -363,9 +363,9 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         startedWithdrawals = new DecoderCustomTypes.QueuedWithdrawal[](1);
-        startedWithdrawals[0].staker = address(boringVault);
+        startedWithdrawals[0].staker = address(oriusVault);
         startedWithdrawals[0].delegatedTo = address(0);
         startedWithdrawals[0].nonce = 0;
         startedWithdrawals[0].start = start;
@@ -389,9 +389,9 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](2);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         startedWithdrawals = new DecoderCustomTypes.QueuedWithdrawal[](1);
-        startedWithdrawals[0].staker = address(boringVault);
+        startedWithdrawals[0].staker = address(oriusVault);
         startedWithdrawals[0].delegatedTo = address(0);
         startedWithdrawals[0].nonce = 0;
         startedWithdrawals[0].start = start;
@@ -415,9 +415,9 @@ contract KarakIntegrationTest is Test, MerkleTreeHelper {
         requests[0].vaults[0] = getAddress(sourceChain, "kweETH");
         requests[0].shares = new uint256[](1);
         requests[0].shares[0] = 1_000e18;
-        requests[0].withdrawer = address(boringVault);
+        requests[0].withdrawer = address(oriusVault);
         startedWithdrawals = new DecoderCustomTypes.QueuedWithdrawal[](1);
-        startedWithdrawals[0].staker = address(boringVault);
+        startedWithdrawals[0].staker = address(oriusVault);
         startedWithdrawals[0].delegatedTo = address(0);
         startedWithdrawals[0].nonce = 0;
         startedWithdrawals[0].start = start;

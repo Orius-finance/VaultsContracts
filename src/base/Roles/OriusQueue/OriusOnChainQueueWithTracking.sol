@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringOnChainQueue} from "src/base/Roles/BoringQueue/BoringOnChainQueue.sol";
+import {OriusOnChainQueue} from "src/base/Roles/OriusQueue/OriusOnChainQueue.sol";
 
-contract BoringOnChainQueueWithTracking is BoringOnChainQueue {
+contract OriusOnChainQueueWithTracking is OriusOnChainQueue {
     // ========================================= GLOBAL STATE =========================================
 
     /**
@@ -18,7 +18,7 @@ contract BoringOnChainQueueWithTracking is BoringOnChainQueue {
 
     //============================== ERRORS ===============================
 
-    error BoringOnChainQueueWithTracking__ZeroNonce();
+    error OriusOnChainQueueWithTracking__ZeroNonce();
 
     //============================== EVENTS ===============================
 
@@ -29,10 +29,10 @@ contract BoringOnChainQueueWithTracking is BoringOnChainQueue {
     constructor(
         address _owner,
         address _auth,
-        address payable _boringVault,
+        address payable _oriusVault,
         address _accountant,
         bool _trackWithdrawsOnChain
-    ) BoringOnChainQueue(_owner, _auth, _boringVault, _accountant) {
+    ) OriusOnChainQueue(_owner, _auth, _oriusVault, _accountant) {
         trackWithdrawsOnChain = _trackWithdrawsOnChain;
     }
 
@@ -109,7 +109,7 @@ contract BoringOnChainQueueWithTracking is BoringOnChainQueue {
      */
     function getOnChainWithdraw(bytes32 requestId) public view returns (OnChainWithdraw memory) {
         OnChainWithdraw memory request = onChainWithdraws[requestId];
-        if (request.nonce == 0) revert BoringOnChainQueueWithTracking__ZeroNonce();
+        if (request.nonce == 0) revert OriusOnChainQueueWithTracking__ZeroNonce();
         return onChainWithdraws[requestId];
     }
 

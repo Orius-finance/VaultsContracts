@@ -9,7 +9,7 @@ import {ERC4626} from "@solmate/tokens/ERC4626.sol";
 import {Test, stdStorage, StdStorage, stdError, console} from "@forge-std/Test.sol";
 
 contract MerkleTreeCheckerTest is Test, MerkleTreeHelper {
-    address public boringVault = 0x5401b8620E5FB570064CA9114fd1e135fd77D57c;
+    address public oriusVault = 0x5401b8620E5FB570064CA9114fd1e135fd77D57c;
     address public rawDataDecoderAndSanitizer;
     address public managerAddress = 0xcf38e37872748E3b66741A42560672A6cef75e9B;
     address public accountantAddress = 0x28634D0c5edC67CF2450E74deA49B90a4FF93dCE;
@@ -21,12 +21,12 @@ contract MerkleTreeCheckerTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        rawDataDecoderAndSanitizer = address(new LombardBtcDecoderAndSanitizer(boringVault, address(0)));
+        rawDataDecoderAndSanitizer = address(new LombardBtcDecoderAndSanitizer(oriusVault, address(0)));
     }
 
     function testCheckingGoodTree() external {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -108,7 +108,7 @@ contract MerkleTreeCheckerTest is Test, MerkleTreeHelper {
 
     function testFailCheckingBadTree() external {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

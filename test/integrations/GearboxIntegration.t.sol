@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -46,37 +46,37 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -97,7 +97,7 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -108,12 +108,12 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testGearboxIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
 
         // get dWETHV3
         // get sdWETHV3
@@ -128,8 +128,8 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
         // leafs[4] = ManageLeaf(sdWETHV3, false, "claim()", new address[](0));
         // leafs[5] = ManageLeaf(sdWETHV3, false, "withdraw(uint256)", new address[](0));
         // leafs[6] = ManageLeaf(dWETHV3, false, "withdraw(uint256,address,address)", new address[](2));
-        // leafs[6].argumentAddresses[0] = address(boringVault);
-        // leafs[6].argumentAddresses[1] = address(boringVault);
+        // leafs[6].argumentAddresses[0] = address(oriusVault);
+        // leafs[6].argumentAddresses[1] = address(oriusVault);
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
 
@@ -157,14 +157,14 @@ contract GearboxIntegrationTest is Test, MerkleTreeHelper {
         bytes[] memory targetData = new bytes[](7);
         targetData[0] =
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "dWETHV3"), type(uint256).max);
-        targetData[1] = abi.encodeWithSignature("deposit(uint256,address)", 1_000e18, address(boringVault));
+        targetData[1] = abi.encodeWithSignature("deposit(uint256,address)", 1_000e18, address(oriusVault));
         targetData[2] =
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "sdWETHV3"), type(uint256).max);
         targetData[3] = abi.encodeWithSignature("deposit(uint256)", 100e18);
         targetData[4] = abi.encodeWithSignature("claim()");
         targetData[5] = abi.encodeWithSignature("withdraw(uint256)", 100e18);
         targetData[6] = abi.encodeWithSignature(
-            "withdraw(uint256,address,address)", 1_000e18 - 1, address(boringVault), address(boringVault)
+            "withdraw(uint256,address,address)", 1_000e18 - 1, address(oriusVault), address(oriusVault)
         );
 
         address[] memory decodersAndSanitizers = new address[](7);

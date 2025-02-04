@@ -15,7 +15,7 @@ import "forge-std/Script.sol";
 contract CreateStakedETHFIMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x86B5780b606940Eb59A062aA85a07959518c0161;
+    address public oriusVault = 0x86B5780b606940Eb59A062aA85a07959518c0161;
     address public managerAddress = 0xb623FaF559b414A1C7EF2d15f3260CA0Fd239431;
     address public accountantAddress = 0x05A1552c5e18F5A0BB9571b5F2D6a4765ebdA32b;
     address public rawDataDecoderAndSanitizer = 0xb8bb22226d385Cf504f30176683FC395cB928633;
@@ -32,7 +32,7 @@ contract CreateStakedETHFIMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateAdminStrategistMerkleRoot() public {
         setSourceChainName(arbitrum);
-        setAddress(false, arbitrum, "boringVault", boringVault);
+        setAddress(false, arbitrum, "oriusVault", oriusVault);
         setAddress(false, arbitrum, "managerAddress", managerAddress);
         setAddress(false, arbitrum, "accountantAddress", accountantAddress);
         setAddress(false, arbitrum, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

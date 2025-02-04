@@ -5,5 +5,5 @@ import {FluidDexDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Protoc
 import {BaseDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/BaseDecoderAndSanitizer.sol";
 
 contract FluidDexFullDecoderAndSanitizer is FluidDexDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 }

@@ -64,7 +64,7 @@ abstract contract CamelotDecoderAndSanitizer is BaseDecoderAndSanitizer {
         returns (bytes memory addressesFound)
     {
         // Sanitize raw data
-        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert CamelotDecoderAndSanitizer__BadTokenId();
         }
         // Extract addresses from camelotNonFungiblePositionManager.positions(params.tokenId).
@@ -82,7 +82,7 @@ abstract contract CamelotDecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert CamelotDecoderAndSanitizer__BadTokenId();
         }
 
@@ -99,7 +99,7 @@ abstract contract CamelotDecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (camelotNonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert CamelotDecoderAndSanitizer__BadTokenId();
         }
 

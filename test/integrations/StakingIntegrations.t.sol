@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -12,7 +12,7 @@ import {StakingDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Staking
 import {DecoderCustomTypes} from "src/interfaces/DecoderCustomTypes.sol";
 import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthority.sol";
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
-import {BoringDrone} from "src/base/Drones/BoringDrone.sol";
+import {OriusDrone} from "src/base/Drones/OriusDrone.sol";
 import {DroneLib} from "src/base/Drones/DroneLib.sol";
 
 import {Test, stdStorage, StdStorage, stdError, console} from "@forge-std/Test.sol";
@@ -23,16 +23,16 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
-    BoringDrone public boringDrone;
+    OriusDrone public oriusDrone;
 
     uint8 public constant MANAGER_ROLE = 1;
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -48,34 +48,34 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        boringDrone = new BoringDrone(address(boringVault), 0);
+        oriusDrone = new OriusDrone(address(oriusVault), 0);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -96,7 +96,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -107,15 +107,15 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testEtherFiIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
 
         // unwrap weth
         // mint eETH
@@ -160,7 +160,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         targetData[5] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "EETH_LIQUIDITY_POOL"), type(uint256).max
         );
-        targetData[6] = abi.encodeWithSignature("requestWithdraw(address,uint256)", address(boringVault), 100e18 - 2);
+        targetData[6] = abi.encodeWithSignature("requestWithdraw(address,uint256)", address(oriusVault), 100e18 - 2);
         uint256[] memory values = new uint256[](7);
         values[1] = 100e18;
         address[] memory decodersAndSanitizers = new address[](7);
@@ -194,7 +194,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
     }
 
     function testLidoIntegration() external {
-        deal(address(boringVault), 1_000e18);
+        deal(address(oriusVault), 1_000e18);
 
         // Call submit
         // call approve
@@ -204,7 +204,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         _addLidoLeafs(leafs);
         // leafs[5] = ManageLeaf(unstETH, false, "requestWithdrawals(uint256[],address)", new address[](1));
-        // leafs[5].argumentAddresses[0] = address(boringVault);
+        // leafs[5].argumentAddresses[0] = address(oriusVault);
         // leafs[6] = ManageLeaf(unstETH, false, "claimWithdrawal(uint256)", new address[](0));
         // leafs[7] = ManageLeaf(unstETH, false, "claimWithdrawals(uint256[],uint256[])", new address[](0));
 
@@ -242,7 +242,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         amounts[0] = 100e18;
         amounts[1] = 100e18;
         amounts[2] = 100e18;
-        targetData[5] = abi.encodeWithSignature("requestWithdrawals(uint256[],address)", amounts, address(boringVault));
+        targetData[5] = abi.encodeWithSignature("requestWithdrawals(uint256[],address)", amounts, address(oriusVault));
 
         address[] memory decodersAndSanitizers = new address[](6);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
@@ -294,18 +294,18 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
 
         values = new uint256[](2);
 
-        uint256 boringVaultETHBalance = address(boringVault).balance;
+        uint256 oriusVaultETHBalance = address(oriusVault).balance;
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            address(boringVault).balance - boringVaultETHBalance,
+            address(oriusVault).balance - oriusVaultETHBalance,
             300e18,
-            "BoringVault should have received 300 ETH from withdrawals"
+            "OriusVault should have received 300 ETH from withdrawals"
         );
     }
 
     function testNativeWrapperIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
 
         // Unwrap all WETH
         // mint WETH via deposit
@@ -337,15 +337,15 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
     }
 
     function testNativeWrapperIntegratioViaDrone() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringDrone), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusDrone), 100e18);
 
         // Unwrap all WETH
         // mint WETH via deposit
-        setAddress(true, sourceChain, "boringVault", address(boringDrone));
+        setAddress(true, sourceChain, "oriusVault", address(oriusDrone));
         ManageLeaf[] memory leafs = new ManageLeaf[](4);
         _addNativeLeafs(leafs);
         leafs[2] = ManageLeaf(
-            address(boringDrone),
+            address(oriusDrone),
             false,
             "withdrawNativeFromDrone()",
             new address[](0),
@@ -354,7 +354,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         );
 
         // Convert the leafs into puppet leafs.
-        ManageLeaf[] memory puppetLeafs = _createPuppetLeafs(leafs, address(boringDrone));
+        ManageLeaf[] memory puppetLeafs = _createPuppetLeafs(leafs, address(oriusDrone));
 
         bytes32[][] memory manageTree = _generateMerkleTree(puppetLeafs);
 
@@ -367,14 +367,14 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         bytes32[][] memory manageProofs = _getProofsUsingTree(manageLeafs, manageTree);
 
         address[] memory targets = new address[](3);
-        targets[0] = address(boringDrone);
-        targets[1] = address(boringDrone);
-        targets[2] = address(boringDrone);
+        targets[0] = address(oriusDrone);
+        targets[1] = address(oriusDrone);
+        targets[2] = address(oriusDrone);
 
         bytes[] memory targetData = new bytes[](3);
         targetData[0] =
             abi.encodeWithSignature("withdraw(uint256)", 100e18, getAddress(sourceChain, "WETH"), DroneLib.TARGET_FLAG);
-        targetData[1] = abi.encodeWithSignature("withdrawNativeFromDrone()", address(boringDrone), DroneLib.TARGET_FLAG);
+        targetData[1] = abi.encodeWithSignature("withdrawNativeFromDrone()", address(oriusDrone), DroneLib.TARGET_FLAG);
         targetData[2] = abi.encodeWithSignature("deposit()", getAddress(sourceChain, "WETH"), DroneLib.TARGET_FLAG);
         uint256[] memory values = new uint256[](3);
         values[2] = 100e18;
@@ -386,7 +386,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
     }
 
     function testSwellIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
 
         // unwrap weth
         // mint swETH
@@ -447,11 +447,11 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        assertApproxEqAbs(address(boringVault).balance, 100e18, 1, "BoringVault should have withdrawn and got ETH.");
+        assertApproxEqAbs(address(oriusVault).balance, 100e18, 1, "OriusVault should have withdrawn and got ETH.");
     }
 
     function testMantleIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
 
         // unwrap weth
         // mint swETH
@@ -517,12 +517,12 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertApproxEqRel(
-            address(boringVault).balance, 100e18, 0.0005e18, "BoringVault should have withdrawn and got ETH."
+            address(oriusVault).balance, 100e18, 0.0005e18, "OriusVault should have withdrawn and got ETH."
         );
     }
 
     function testFraxIntegration() external {
-        deal(address(boringVault), 100e18);
+        deal(address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         _addFraxLeafs(leafs);
@@ -562,18 +562,18 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
         targetData[0] = abi.encodeWithSignature("submit()");
         targetData[1] =
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "SFRXETH"), type(uint256).max);
-        targetData[2] = abi.encodeWithSignature("deposit(uint256,address)", 50e18, boringVault);
+        targetData[2] = abi.encodeWithSignature("deposit(uint256,address)", 50e18, oriusVault);
         targetData[3] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "frxETHRedemptionTicket"), type(uint256).max
         );
         targetData[4] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "frxETHRedemptionTicket"), type(uint256).max
         );
-        targetData[5] = abi.encodeWithSignature("enterRedemptionQueue(address,uint120)", boringVault, 50e18);
+        targetData[5] = abi.encodeWithSignature("enterRedemptionQueue(address,uint120)", oriusVault, 50e18);
         targetData[6] =
-            abi.encodeWithSignature("enterRedemptionQueueViaSfrxEth(address,uint120)", boringVault, expectedSfrxETH);
+            abi.encodeWithSignature("enterRedemptionQueueViaSfrxEth(address,uint120)", oriusVault, expectedSfrxETH);
         targetData[7] =
-            abi.encodeWithSignature("earlyBurnRedemptionTicketNft(address,uint256)", boringVault, expectedTokenId0);
+            abi.encodeWithSignature("earlyBurnRedemptionTicketNft(address,uint256)", oriusVault, expectedTokenId0);
 
         address[] memory decodersAndSanitizers = new address[](8);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
@@ -592,10 +592,10 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
 
         uint256 expectedFrxETHOutMinusPenalty = uint256(50e18).mulDivDown(1e4 - 0.005e4, 1e4);
         assertApproxEqAbs(
-            getERC20(sourceChain, "FRXETH").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "FRXETH").balanceOf(address(oriusVault)),
             expectedFrxETHOutMinusPenalty,
             1,
-            "BoringVault should have 50 FRXETH minus penalty from cancellation"
+            "OriusVault should have 50 FRXETH minus penalty from cancellation"
         );
 
         // Fast forward 12 days so ticket is matured.
@@ -611,7 +611,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         targetData[0] =
-            abi.encodeWithSignature("burnRedemptionTicketNft(uint256,address)", expectedTokenId1, boringVault);
+            abi.encodeWithSignature("burnRedemptionTicketNft(uint256,address)", expectedTokenId1, oriusVault);
 
         values = new uint256[](1);
 
@@ -620,7 +620,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
 
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        assertApproxEqAbs(address(boringVault).balance, 50e18, 1, "Boring Vault should have 50 ETH from redemption");
+        assertApproxEqAbs(address(oriusVault).balance, 50e18, 1, "Orius Vault should have 50 ETH from redemption");
     }
 
     // ========================================= HELPER FUNCTIONS =========================================
@@ -668,7 +668,7 @@ contract StakingIntegrationsTest is Test, MerkleTreeHelper {
     }
 
     function withdraw(uint256 amount) external {
-        boringVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
+        oriusVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
     }
 }
 

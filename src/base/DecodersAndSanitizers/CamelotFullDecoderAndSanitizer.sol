@@ -5,8 +5,8 @@ import {BaseDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/BaseDecode
 import {CamelotDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Protocols/CamelotDecoderAndSanitizer.sol";
 
 contract CamelotFullDecoderAndSanitizer is CamelotDecoderAndSanitizer {
-    constructor(address _boringVault, address _camelotNonFungiblePositionManager)
-        BaseDecoderAndSanitizer(_boringVault)
+    constructor(address _oriusVault, address _camelotNonFungiblePositionManager)
+        BaseDecoderAndSanitizer(_oriusVault)
         CamelotDecoderAndSanitizer(_camelotNonFungiblePositionManager)
     {}
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 import {DeployArcticArchitecture, ERC20, Deployer} from "script/ArchitectureDeployments/DeployArcticArchitecture.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
-import {BoringDrone} from "src/base/Drones/BoringDrone.sol";
+import {OriusDrone} from "src/base/Drones/OriusDrone.sol";
 
 // Import Decoder and Sanitizer to deploy.
 import {PointFarmingDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/PointFarmingDecoderAndSanitizer.sol";
@@ -19,9 +19,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, MerkleTreeHe
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Bridging Test Vault";
-    string public boringVaultSymbol = "BTEV";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Bridging Test Vault";
+    string public oriusVaultSymbol = "BTEV";
+    uint8 public oriusVaultDecimals = 18;
 
     address internal owner;
     address internal testAddress;
@@ -66,7 +66,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, MerkleTreeHe
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = BridgingTestVaultEthRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = BridgingTestVaultEthName;
+        names .oriusVault = BridgingTestVaultEthName;
         names.manager = BridgingTestVaultEthManagerName;
         names.accountant = BridgingTestVaultEthAccountantName;
         names.teller = BridgingTestVaultEthTellerName;
@@ -89,7 +89,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, MerkleTreeHe
 
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(PointFarmingDecoderAndSanitizer).creationCode;
-        bytes memory constructorArgs = abi.encode(deployer.getAddress(names.boringVault));
+        bytes memory constructorArgs = abi.encode(deployer.getAddress(names .oriusVault));
 
         // Setup extra deposit assets.
         // none
@@ -115,9 +115,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, MerkleTreeHe
         _deploy(
             "Scroll/BridgingTestVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

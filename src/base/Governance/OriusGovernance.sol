@@ -11,7 +11,7 @@ import {ERC20Votes, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
-contract BoringGovernance is ERC20Votes, Auth, ERC721Holder, ERC1155Holder {
+contract OriusGovernance is ERC20Votes, Auth, ERC721Holder, ERC1155Holder {
     using Address for address;
     using SafeERC20 for ERC20;
 

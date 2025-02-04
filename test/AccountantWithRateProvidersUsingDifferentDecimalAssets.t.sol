@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -17,7 +17,7 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     AccountantWithRateProviders public accountant;
     address public payoutAddress = vm.addr(7777777);
     RolesAuthority public rolesAuthority;
@@ -27,7 +27,7 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
     uint8 public constant MINTER_ROLE = 1;
     uint8 public constant ADMIN_ROLE = 2;
     uint8 public constant UPDATE_EXCHANGE_RATE_ROLE = 3;
-    uint8 public constant BORING_VAULT_ROLE = 4;
+    uint8 public constant ORIUS_VAULT_ROLE = 4;
 
     ERC20 internal USDC;
     ERC20 internal USDT;
@@ -48,17 +48,17 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
         SDAI = getERC20(sourceChain, "SDAI");
         sDaiRateProvider = getAddress(sourceChain, "sDaiRateProvider");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 6);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 6);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payoutAddress, 1e6, address(USDC), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payoutAddress, 1e6, address(USDC), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         vm.startPrank(usdcWhale);
         USDC.safeTransfer(address(this), 1_000_000e6);
         vm.stopPrank();
-        USDC.safeApprove(address(boringVault), 1_000_000e6);
-        boringVault.enter(address(this), USDC, 1_000_000e6, address(this), 1_000_000e6);
+        USDC.safeApprove(address(oriusVault), 1_000_000e6);
+        oriusVault.enter(address(this), USDC, 1_000_000e6, address(this), 1_000_000e6);
 
         accountant.setRateProviderData(DAI, true, address(0));
         accountant.setRateProviderData(USDT, true, address(0));
@@ -86,7 +86,7 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
 
         (,, uint128 feesOwed,,,,,,,,,) = accountant.accountantState();
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         USDC.safeApprove(address(accountant), type(uint256).max);
         // Claim fees.
         accountant.claimFees(USDC);
@@ -102,8 +102,8 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
 
         (,, uint128 feesOwed,,,,,,,,,) = accountant.accountantState();
 
-        deal(address(USDT), address(boringVault), 1_000_000e6);
-        vm.startPrank(address(boringVault));
+        deal(address(USDT), address(oriusVault), 1_000_000e6);
+        vm.startPrank(address(oriusVault));
         USDT.safeApprove(address(accountant), type(uint256).max);
         // Claim fees.
         accountant.claimFees(USDT);
@@ -119,8 +119,8 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
 
         (,, uint128 feesOwed,,,,,,,,,) = accountant.accountantState();
 
-        deal(address(DAI), address(boringVault), 1_000_000e18);
-        vm.startPrank(address(boringVault));
+        deal(address(DAI), address(oriusVault), 1_000_000e18);
+        vm.startPrank(address(oriusVault));
         DAI.safeApprove(address(accountant), type(uint256).max);
         // Claim fees.
         accountant.claimFees(DAI);
@@ -137,8 +137,8 @@ contract AccountantWithRateProvidersUsingDifferentDecimalTest is Test, MerkleTre
 
         (,, uint128 feesOwed,,,,,,,,,) = accountant.accountantState();
 
-        deal(address(SDAI), address(boringVault), 1_000_000e18);
-        vm.startPrank(address(boringVault));
+        deal(address(SDAI), address(oriusVault), 1_000_000e18);
+        vm.startPrank(address(oriusVault));
         SDAI.safeApprove(address(accountant), type(uint256).max);
         // Claim fees.
         accountant.claimFees(SDAI);

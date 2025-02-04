@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {DeployArcticArchitecture, ERC20, Deployer} from "script/ArchitectureDeployments/DeployArcticArchitecture.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {ChainValues} from "test/resources/ChainValues.sol";

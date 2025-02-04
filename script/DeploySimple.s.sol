@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import "forge-std/Script.sol";
 import "forge-std/console.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {DeployArcticArchitecture, ERC20, Deployer} from "script/ArchitectureDeployments/DeployArcticArchitecture.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {ChainValues} from "test/resources/ChainValues.sol";
@@ -31,7 +31,7 @@ contract DeploySimple is Script {
         address WETH = 0x4200000000000000000000000000000000000006;
         address myAddress = 0x4BEB1413d5B15B147458242Fc6E96bF8f6635F52;
 
-        BoringVault vault = BoringVault(payable(0xE22743990af80f48170f0360DA9387C9221c9d13));
+        OriusVault vault = OriusVault(payable(0xE22743990af80f48170f0360DA9387C9221c9d13));
         AccountantWithFixedRate accountant = AccountantWithFixedRate(address(0xDB6D48e3172Caff95903e7403D4041B4C2FE7858));
         TellerWithMultiAssetSupport teller = TellerWithMultiAssetSupport(address(0x63ACb8C6476c68231fDb78Ef9B342FF4FE53E356));
         Authority authority = Authority(address(0x0fe1166a6B4396567bd088222537533Bb698f4cE));

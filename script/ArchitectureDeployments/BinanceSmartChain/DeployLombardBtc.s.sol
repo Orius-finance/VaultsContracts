@@ -18,9 +18,9 @@ contract DeployLombardBtcScript is DeployArcticArchitecture, BinanceSmartChainAd
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Lombard BTC Vault";
-    string public boringVaultSymbol = "LBTCv";
-    uint8 public boringVaultDecimals = 8;
+    string public oriusVaultName = "Lombard BTC Vault";
+    string public oriusVaultSymbol = "LBTCv";
+    uint8 public oriusVaultDecimals = 8;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployLombardBtcScript is DeployArcticArchitecture, BinanceSmartChainAd
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = LombardBtcRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = LombardBtcName;
+        names .oriusVault = LombardBtcName;
         names.manager = LombardBtcManagerName;
         names.accountant = LombardBtcAccountantName;
         names.teller = LombardBtcTellerName;
@@ -70,7 +70,7 @@ contract DeployLombardBtcScript is DeployArcticArchitecture, BinanceSmartChainAd
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(LombardBtcDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         depositAssets.push(
@@ -115,9 +115,9 @@ contract DeployLombardBtcScript is DeployArcticArchitecture, BinanceSmartChainAd
         _deploy(
             "BinanceSmartChain/LombardBtcDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -22,7 +22,7 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -30,7 +30,7 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -41,31 +41,31 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new EtherFiLiquidEthDecoderAndSanitizer(address(boringVault), address(0)));
+        rawDataDecoderAndSanitizer = address(new EtherFiLiquidEthDecoderAndSanitizer(address(oriusVault), address(0)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -86,7 +86,7 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -97,16 +97,16 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testSupplyingAndWithdrawingBaseToken() external {
         uint256 assets = 10_000e18;
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), assets);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), assets);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory collateralAssets; // None
@@ -147,8 +147,8 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
 
     function testBorrowing() external {
         uint256 assets = 10_000e18;
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), assets);
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), assets);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory collateralAssets = new ERC20[](1);
@@ -204,7 +204,7 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
 
     function testClaimingRewards() external {
         uint256 assets = 10_000e18;
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), assets);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), assets);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory collateralAssets; // None
@@ -250,7 +250,7 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         targetData[0] = abi.encodeWithSignature(
-            "claim(address,address,bool)", getAddress(sourceChain, "cWETHV3"), boringVault, true
+            "claim(address,address,bool)", getAddress(sourceChain, "cWETHV3"), oriusVault, true
         );
         values = new uint256[](1);
         decodersAndSanitizers = new address[](1);
@@ -259,9 +259,9 @@ contract CompoundV3IntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertGt(
-            getERC20(sourceChain, "COMP").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "COMP").balanceOf(address(oriusVault)),
             0,
-            "BoringVault should have received COMP rewards"
+            "OriusVault should have received COMP rewards"
         );
     }
 

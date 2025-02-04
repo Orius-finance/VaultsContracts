@@ -15,7 +15,7 @@ import "forge-std/Script.sol";
 contract CreateCbBTCMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x42A03534DBe07077d705311854E3B6933dD6Af85;
+    address public oriusVault = 0x42A03534DBe07077d705311854E3B6933dD6Af85;
     address public managerAddress = 0xcb4647c77688489655F45bB5bac42E14a0b05F85;
     address public accountantAddress = 0x1c217f17d57d3CCD1CB3d8CB16B21e8f0b544156;
     address public rawDataDecoderAndSanitizer = 0xA6b52921652A828Da445b457442F8cA10638a4Bb;
@@ -32,7 +32,7 @@ contract CreateCbBTCMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateAdminStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

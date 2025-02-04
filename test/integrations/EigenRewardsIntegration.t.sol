@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -26,7 +26,7 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
 
     ManagerWithMerkleVerification public manager =
         ManagerWithMerkleVerification(0x354ade0382EEC1BF0a444339ABc82931457C2c0e);
-    BoringVault public boringVault = BoringVault(payable(0xE77076518A813616315EaAba6cA8e595E845EeE9));
+    OriusVault public oriusVault = OriusVault(payable(0xE77076518A813616315EaAba6cA8e595E845EeE9));
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority = RolesAuthority(0x1f5D0e8e7eb6390D2eb6024cdC8B38A7faab596E);
 
@@ -37,7 +37,7 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -48,19 +48,19 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
-        owner = boringVault.owner();
+        owner = oriusVault.owner();
     }
 
     function testProcessClaim() external {
-        deal(getAddress(sourceChain, "EIGEN"), address(boringVault), 0);
+        deal(getAddress(sourceChain, "EIGEN"), address(oriusVault), 0);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         _addLeafsForEigenLayerLST(
@@ -95,10 +95,10 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
 
         uint256[] memory values = new uint256[](1);
 
-        // Before we can claim we need the user to call setClaimerFor(address boringVault)
+        // Before we can claim we need the user to call setClaimerFor(address oriusVault)
         address user = 0x539Ee70082Ee32CE1cFc3cB69e004d8D06FCA2B4;
         vm.startPrank(user);
-        EigenRewards(getAddress(sourceChain, "eigenRewards")).setClaimerFor(address(boringVault));
+        EigenRewards(getAddress(sourceChain, "eigenRewards")).setClaimerFor(address(oriusVault));
         vm.stopPrank();
 
         vm.prank(strategist);
@@ -106,14 +106,14 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
 
         uint256 expectedEigenBalance = 17.45785343884726937e18;
         assertEq(
-            getERC20(sourceChain, "EIGEN").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "EIGEN").balanceOf(address(oriusVault)),
             expectedEigenBalance,
             "Eigen process claim failed"
         );
     }
 
     function testSetClaimerFor() external {
-        deal(getAddress(sourceChain, "EIGEN"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "EIGEN"), address(oriusVault), 1_000e18);
 
         address claimer = getAddress(sourceChain, "dev0Address");
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
@@ -152,7 +152,7 @@ contract EigenRewardsIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         address claimerThatWasSet =
-            EigenRewards(getAddress(sourceChain, "eigenRewards")).claimerFor(address(boringVault));
+            EigenRewards(getAddress(sourceChain, "eigenRewards")).claimerFor(address(oriusVault));
 
         assertTrue(claimerThatWasSet == claimer, "Claimer was not set correctly");
     }

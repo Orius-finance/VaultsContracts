@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -22,7 +22,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -30,7 +30,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     // Mint Deposit Data
@@ -52,33 +52,33 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new LombardBTCFullMinterDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new LombardBTCFullMinterDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -99,7 +99,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -110,11 +110,11 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testLombardStakingIntegrationBNB() external {
@@ -126,12 +126,12 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
         address LBTC = getAddress(sourceChain, "LBTC");
         vm.startPrank(ILBTC(LBTC).owner());
         ILBTC(LBTC).changeConsortium(address(mockConsortium));
-        ILBTC(LBTC).addMinter(address(boringVault));
+        ILBTC(LBTC).addMinter(address(oriusVault));
         ILBTC(LBTC).toggleWithdrawals();
         ILBTC(LBTC).changeTreasuryAddress(address(69));
         vm.stopPrank();
 
-        deal(address(getAddress(sourceChain, "BTCB")), address(boringVault), 200e18);
+        deal(address(getAddress(sourceChain, "BTCB")), address(oriusVault), 200e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         _addLombardBTCLeafs(leafs, getERC20(sourceChain, "BTCB"), getERC20(sourceChain, "LBTC"));
@@ -159,7 +159,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
         bytes memory depositData = abi.encode(
             OutputWithPayload(
                 56, //bsc chain id
-                getAddress(sourceChain, "boringVault"),
+                getAddress(sourceChain, "oriusVault"),
                 uint64(uint256(100e18)),
                 bytes32(uint256(5)),
                 uint32(10)
@@ -180,7 +180,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "LBTC"), type(uint256).max);
 
          targetData[1] = 
-             abi.encodeWithSignature("mint(address,uint256)", getAddress(sourceChain, "boringVault"), 100e18);  
+             abi.encodeWithSignature("mint(address,uint256)", getAddress(sourceChain, "oriusVault"), 100e18);  
          targetData[2] = 
              abi.encodeWithSignature("mint(bytes,bytes)", depositData, signature); 
          targetData[3] = 
@@ -205,7 +205,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
 
     function testLombardStakingIntegrationBase() external {
         _setUp("base", "BASE_RPC_URL", 22662896);
-        deal(address(getAddress(sourceChain, "cbBTC")), address(boringVault), 1000e18);
+        deal(address(getAddress(sourceChain, "cbBTC")), address(oriusVault), 1000e18);
 
         // Deploy Mock Consortium
         MockConsortium mockConsortium = new MockConsortium();
@@ -214,7 +214,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
         address LBTC = getAddress(sourceChain, "LBTC");
         vm.startPrank(ILBTC(LBTC).owner());
         ILBTC(LBTC).changeConsortium(address(mockConsortium));
-        ILBTC(LBTC).addMinter(address(boringVault));
+        ILBTC(LBTC).addMinter(address(oriusVault));
         ILBTC(LBTC).toggleWithdrawals();
         ILBTC(LBTC).changeTreasuryAddress(address(69));
         vm.stopPrank();
@@ -245,7 +245,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
         bytes memory depositData = abi.encode(
             OutputWithPayload(
                 8453, //bsc chain id
-                getAddress(sourceChain, "boringVault"),
+                getAddress(sourceChain, "oriusVault"),
                 uint64(uint256(100e18)),
                 bytes32(uint256(5)),
                 uint32(10)
@@ -265,7 +265,7 @@ contract LombardBTCStakingIntegrationTest is Test, MerkleTreeHelper {
          targetData[0] =
             abi.encodeWithSignature("approve(address,uint256)", getAddress(sourceChain, "LBTC"), type(uint256).max);
          targetData[1] = 
-             abi.encodeWithSignature("mint(address,uint256)", getAddress(sourceChain, "boringVault"), 100e18);  
+             abi.encodeWithSignature("mint(address,uint256)", getAddress(sourceChain, "oriusVault"), 100e18);  
          targetData[2] = 
              abi.encodeWithSignature("mint(bytes,bytes)", depositData, signature); 
          targetData[3] = 

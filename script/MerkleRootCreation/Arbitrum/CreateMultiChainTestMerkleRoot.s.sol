@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 contract CreateMultiChainTestMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0xaA6D4Fb1FF961f8E52334f433974d40484e8be8F;
+    address public oriusVault = 0xaA6D4Fb1FF961f8E52334f433974d40484e8be8F;
     address public rawDataDecoderAndSanitizer = 0x28edfc0bffdF1f9C986923729b88B5F40f2B92D9;
     address public managerAddress = 0x744d1f71a6d064204b4c59Cf2BDCF9De9C6c3430;
     address public accountantAddress = 0x99c836937305693A5518819ED457B0d3dfE99785;
@@ -30,7 +30,7 @@ contract CreateMultiChainTestMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateMultiChainTestStrategistMerkleRoot() public {
         setSourceChainName(arbitrum);
-        setAddress(false, arbitrum, "boringVault", boringVault);
+        setAddress(false, arbitrum, "oriusVault", oriusVault);
         setAddress(false, arbitrum, "managerAddress", managerAddress);
         setAddress(false, arbitrum, "accountantAddress", accountantAddress);
         setAddress(false, arbitrum, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

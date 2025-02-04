@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -48,37 +48,37 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(true, sourceChain, "boringVault", address(boringVault));
+        setAddress(true, sourceChain, "oriusVault", address(oriusVault));
         setAddress(true, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(true, sourceChain, "manager", address(manager));
         setAddress(true, sourceChain, "managerAddress", address(manager));
         setAddress(true, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -99,7 +99,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -110,13 +110,13 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testPendleLimitOrdersFill() external {
-        // Mint Super Symbiotic YT to Boring Vault
-        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(boringVault), 10_000e18);
+        // Mint Super Symbiotic YT to Orius Vault
+        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(oriusVault), 10_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](4);
         _addPendleLimitOrderLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarketDecember"));
@@ -159,7 +159,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "fill(((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],address,uint256,bytes,bytes)",
             orders,
-            boringVault,
+            oriusVault,
             100e18,
             hex"",
             hex""
@@ -173,15 +173,15 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertGt(
-            getERC20(sourceChain, "pendleWeethSyDecember").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "pendleWeethSyDecember").balanceOf(address(oriusVault)),
             0,
-            "BoringVault should have SY"
+            "OriusVault should have SY"
         );
     }
 
     function testPendleLimitOrdersSwapExactSyForPt() external {
-        // Mint Super Symbiotic SY to Boring Vault
-        deal(getAddress(sourceChain, "pendleWeethSyDecember"), address(boringVault), 100e18);
+        // Mint Super Symbiotic SY to Orius Vault
+        deal(getAddress(sourceChain, "pendleWeethSyDecember"), address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](32);
         _addPendleMarketLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarketDecember"), true);
@@ -229,7 +229,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         limitOrderData.flashFills[0].makingAmount = 1687467958106575287;
         targetData[1] = abi.encodeWithSignature(
             "swapExactSyForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256),(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarketDecember"),
             100e18,
             0,
@@ -244,7 +244,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         uint256[] memory values = new uint256[](2);
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        uint256 ptBalance = getERC20(sourceChain, "pendleEethPtDecember").balanceOf(address(boringVault));
+        uint256 ptBalance = getERC20(sourceChain, "pendleEethPtDecember").balanceOf(address(oriusVault));
         assertGt(ptBalance, 100e18, "PT balance should be greater than 100.");
     }
 
@@ -253,8 +253,8 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         uint256 blockNumber = 20484884;
         _setup(blockNumber);
 
-        // Mint Super Symbiotic SY to Boring Vault
-        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(boringVault), 100e18);
+        // Mint Super Symbiotic SY to Orius Vault
+        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](32);
         _addPendleMarketLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarketDecember"), true);
@@ -316,7 +316,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         limitOrderData.normalFills[1].makingAmount = 834128382588750478;
         targetData[1] = abi.encodeWithSignature(
             "swapExactYtForSy(address,address,uint256,uint256,(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarketDecember"),
             100e18,
             0,
@@ -330,13 +330,13 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         uint256[] memory values = new uint256[](2);
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        uint256 syBalance = getERC20(sourceChain, "pendleWeethSyDecember").balanceOf(address(boringVault));
+        uint256 syBalance = getERC20(sourceChain, "pendleWeethSyDecember").balanceOf(address(oriusVault));
         assertGt(syBalance, 0, "SY balance should be greater than 0.");
     }
 
     function testSwapLimitOrderReverts() external {
-        // Mint Super Symbiotic SY to Boring Vault
-        deal(getAddress(sourceChain, "pendleWeethSyDecember"), address(boringVault), 100e18);
+        // Mint Super Symbiotic SY to Orius Vault
+        deal(getAddress(sourceChain, "pendleWeethSyDecember"), address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](32);
         _addPendleMarketLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarketDecember"), true);
@@ -385,7 +385,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         limitOrderData.flashFills[0].makingAmount = 1687467958106575287;
         targetData[1] = abi.encodeWithSignature(
             "swapExactSyForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256),(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarketDecember"),
             100e18,
             0,
@@ -448,7 +448,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
 
         targetData[1] = abi.encodeWithSignature(
             "swapExactSyForPt(address,address,uint256,uint256,(uint256,uint256,uint256,uint256,uint256),(address,uint256,((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],bytes))",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pendleWeETHMarketDecember"),
             100e18,
             0,
@@ -469,8 +469,8 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPendleFillLimitOrderReverts() external {
-        // Mint Super Symbiotic YT to Boring Vault
-        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(boringVault), 10_000e18);
+        // Mint Super Symbiotic YT to Orius Vault
+        deal(getAddress(sourceChain, "pendleEethYtDecember"), address(oriusVault), 10_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](4);
         _addPendleLimitOrderLeafs(leafs, getAddress(sourceChain, "pendleWeETHMarketDecember"));
@@ -513,7 +513,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "fill(((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],address,uint256,bytes,bytes)",
             orders,
-            boringVault,
+            oriusVault,
             100e18,
             hex"00",
             hex""
@@ -537,7 +537,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "fill(((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],address,uint256,bytes,bytes)",
             orders,
-            boringVault,
+            oriusVault,
             100e18,
             hex"",
             hex"00"
@@ -590,7 +590,7 @@ contract PendleLimitOrderIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "fill(((uint256,uint256,uint256,uint8,address,address,address,address,uint256,uint256,uint256,bytes),bytes,uint256)[],address,uint256,bytes,bytes)",
             orders,
-            boringVault,
+            oriusVault,
             100e18,
             hex"",
             hex""

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -23,7 +23,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -31,7 +31,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -45,38 +45,38 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new PancakeSwapV3FullDecoderAndSanitizer(
-                address(boringVault),
+                address(oriusVault),
                 getAddress(sourceChain, "pancakeSwapV3NonFungiblePositionManager"),
                 getAddress(sourceChain, "pancakeSwapV3MasterChefV3")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -97,7 +97,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -108,15 +108,15 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testPancakeSwapV3IntegrationNoStaking() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 200e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 200e18);
         // Make sure the vault can
         // swap wETH -> rETH
         // create a new position rETH/wETH
@@ -163,7 +163,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         DecoderCustomTypes.PancakeSwapExactInputParams memory exactInputParams = DecoderCustomTypes
             .PancakeSwapExactInputParams(
             abi.encodePacked(getAddress(sourceChain, "WETH"), uint24(500), getAddress(sourceChain, "RETH")),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             0
         );
@@ -189,7 +189,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
             45e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp
         );
         targetData[4] = abi.encodeWithSignature(
@@ -209,7 +209,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         );
 
         DecoderCustomTypes.CollectParams memory collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[7] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
         targetData[8] = abi.encodeWithSignature("burn(uint256)", expectedTokenId);
@@ -230,7 +230,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPancakeSwapV3IntegrationWithStaking() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 200e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 200e18);
 
         // Make sure the vault can
         // swap wETH -> rETH
@@ -292,7 +292,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         DecoderCustomTypes.PancakeSwapExactInputParams memory exactInputParams = DecoderCustomTypes
             .PancakeSwapExactInputParams(
             abi.encodePacked(getAddress(sourceChain, "WETH"), uint24(500), getAddress(sourceChain, "RETH")),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             0
         );
@@ -324,7 +324,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
             45e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp
         );
         targetData[6] = abi.encodeWithSignature(
@@ -333,7 +333,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         uint256 expectedTokenId = 11099;
         targetData[7] = abi.encodeWithSignature(
             "safeTransferFrom(address,address,uint256)",
-            address(boringVault),
+            address(oriusVault),
             getAddress(sourceChain, "pancakeSwapV3MasterChefV3"),
             expectedTokenId
         );
@@ -342,7 +342,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         targetData[8] = abi.encodeWithSignature(
             "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))", increaseLiquidityParams
         );
-        targetData[9] = abi.encodeWithSignature("harvest(uint256,address)", expectedTokenId, address(boringVault));
+        targetData[9] = abi.encodeWithSignature("harvest(uint256,address)", expectedTokenId, address(oriusVault));
         uint128 expectedLiquidity = 8712642733663394060416 + 8712642733663394060416;
         DecoderCustomTypes.DecreaseLiquidityParams memory decreaseLiquidityParams =
             DecoderCustomTypes.DecreaseLiquidityParams(expectedTokenId, expectedLiquidity, 0, 0, block.timestamp);
@@ -351,10 +351,10 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         );
 
         DecoderCustomTypes.CollectParams memory collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[11] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
-        targetData[12] = abi.encodeWithSignature("withdraw(uint256,address)", expectedTokenId, address(boringVault));
+        targetData[12] = abi.encodeWithSignature("withdraw(uint256,address)", expectedTokenId, address(oriusVault));
         targetData[13] = abi.encodeWithSignature("burn(uint256)", expectedTokenId);
 
         address[] memory decodersAndSanitizers = new address[](14);
@@ -378,7 +378,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testPancakeSwapV3IntegrationReverts() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 200e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 200e18);
         // Make sure the vault can
         // swap wETH -> rETH
         // create a new position rETH/weETH
@@ -423,7 +423,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         DecoderCustomTypes.PancakeSwapExactInputParams memory exactInputParams = DecoderCustomTypes
             .PancakeSwapExactInputParams(
             abi.encodePacked(getAddress(sourceChain, "WETH"), uint24(500), getAddress(sourceChain, "RETH")),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             0
         );
@@ -449,7 +449,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
             45e18,
             0,
             0,
-            address(boringVault),
+            address(oriusVault),
             block.timestamp
         );
         targetData[4] = abi.encodeWithSignature(
@@ -469,7 +469,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         );
 
         DecoderCustomTypes.CollectParams memory collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[7] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
 
@@ -486,7 +486,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         // Make swap path data malformed.
         exactInputParams = DecoderCustomTypes.PancakeSwapExactInputParams(
             abi.encodePacked(getAddress(sourceChain, "WETH"), uint32(500), getAddress(sourceChain, "RETH")),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             0
         );
@@ -502,13 +502,13 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         // Fix swap path data.
         exactInputParams = DecoderCustomTypes.PancakeSwapExactInputParams(
             abi.encodePacked(getAddress(sourceChain, "WETH"), uint24(500), getAddress(sourceChain, "RETH")),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             0
         );
         targetData[1] = abi.encodeWithSignature("exactInput((bytes,address,uint256,uint256))", exactInputParams);
 
-        // Try adding liquidity to a token not owned by the boring vault.
+        // Try adding liquidity to a token not owned by the orius vault.
         increaseLiquidityParams =
             DecoderCustomTypes.IncreaseLiquidityParams(expectedTokenId - 1, 45e18, 45e18, 0, 0, block.timestamp);
         targetData[5] = abi.encodeWithSignature(
@@ -550,7 +550,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
         );
 
         collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId - 1, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId - 1, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[7] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
 
@@ -563,7 +563,7 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
 
         // Fix collect tokenId.
         collectParams = DecoderCustomTypes.CollectParams(
-            expectedTokenId, address(boringVault), type(uint128).max, type(uint128).max
+            expectedTokenId, address(oriusVault), type(uint128).max, type(uint128).max
         );
         targetData[7] = abi.encodeWithSignature("collect((uint256,address,uint128,uint128))", collectParams);
 
@@ -581,6 +581,6 @@ contract PancakeSwapV3IntegrationTest is Test, MerkleTreeHelper {
     }
 
     function withdraw(uint256 amount) external {
-        boringVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
+        oriusVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
     }
 }

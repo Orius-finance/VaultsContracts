@@ -5,9 +5,9 @@ import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProv
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 
 /**
- * @notice This contract is intended to be used to price a Cellar's shares after it has undergone a migration to a BoringVault
+ * @notice This contract is intended to be used to price a Cellar's shares after it has undergone a migration to a OriusVault
  *         using `CellarMigratorWithSharePriceParity`.
- * @dev In order for this parity to be true, the Cellar must have ALL of its TVL in the BoringVault.
+ * @dev In order for this parity to be true, the Cellar must have ALL of its TVL in the OriusVault.
  */
 contract ParitySharePriceOracle {
     /**
@@ -16,12 +16,12 @@ contract ParitySharePriceOracle {
     uint8 public immutable decimals;
 
     /**
-     * @notice The Cellar that was migrated to a BoringVault.
+     * @notice The Cellar that was migrated to a OriusVault.
      */
     ERC4626 public immutable target;
 
     /**
-     * @notice The accountant of the BoringVault.
+     * @notice The accountant of the OriusVault.
      */
     AccountantWithRateProviders public immutable accountant;
 

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -42,7 +42,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
 
     // Mainnet Contracts.
     Deployer public deployer = Deployer(deployerAddress);
-    BoringVault public boringVault = BoringVault(payable(0xf0bb20865277aBd641a307eCe5Ee04E79073416C));
+    OriusVault public oriusVault = OriusVault(payable(0xf0bb20865277aBd641a307eCe5Ee04E79073416C));
     ManagerWithMerkleVerification public manager =
         ManagerWithMerkleVerification(0x227975088C28DBBb4b421c6d96781a53578f19a8);
     LegacyTeller public teller = LegacyTeller(0x5c135e8eC99557b412b9B4492510dCfBD36066F5);
@@ -170,7 +170,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
 
     function testMigration() external {
         dev1Address = 0x2322ba43eFF1542b6A7bAeD35e66099Ea0d12Bd1;
-        // Setup the BoringVault position.
+        // Setup the OriusVault position.
         // Add both migration adaptors and positions to the registry.
         // Also setAddress 1 to be the migration share price oracle.
         // vm.startPrank(registryMultisig);
@@ -249,7 +249,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         vm.stopPrank();
 
         // Remove remaning positions, except the migration position and the eETH position(since it cant be removed due to 1 wei balance).
-        _removeAnyPositionThatIsNotTheBoringVaultPosition(ILLIQUID_MIGRATION_POSITION, 2);
+        _removeAnyPositionThatIsNotTheOriusVaultPosition(ILLIQUID_MIGRATION_POSITION, 2);
 
         {
             uint32[] memory creditPositions = etherFiLiquid1.getCreditPositions();
@@ -267,7 +267,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         );
 
         /// NOTE the above migration can happen over the course of multiple weeks, since all the assets are in the illiquid
-        /// BoringVault position withdraws fail.
+        /// OriusVault position withdraws fail.
         skip(1 days / 4);
 
         /// NOTE if we want to the UI could be updated to state that a migration is underway, and maybe prompt users to use the atomic queue for new deposits or withdraws?
@@ -298,7 +298,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.withdraw(1, user, user);
         vm.stopPrank();
 
-        // Also check that BoringVault deposits fail.
+        // Also check that OriusVault deposits fail.
         vm.expectRevert(bytes("UNAUTHORIZED"));
         teller.deposit(WETH, 1, 0);
 
@@ -325,7 +325,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         // Force out eETH position as it always keeps 1 wei in balance so can not be removed normally.
         // 1 is the index in etherFiLiquid1.getCreditPositions();
         etherFiLiquid1.forcePositionOut(1, EETH_POSITION, false);
-        // Revoke solver role from Cellar so that strategist can not deposit or withdraw from BoringVault.
+        // Revoke solver role from Cellar so that strategist can not deposit or withdraw from OriusVault.
         rolesAuthority.setUserRole(address(etherFiLiquid1), SOLVER_ROLE, false);
         // Give the migrator contract the appropriate roles to complete the migration.
         rolesAuthority.setUserRole(address(migrator), MINTER_ROLE, true);
@@ -391,9 +391,9 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         );
         vm.stopPrank();
 
-        // Users can now deposit into the BoringVault.
+        // Users can now deposit into the OriusVault.
         deal(address(WETH), user, 1e18);
-        WETH.safeApprove(address(boringVault), 1e18);
+        WETH.safeApprove(address(oriusVault), 1e18);
         uint256 sharesOut = teller.deposit(WETH, 1e18, 0);
 
         assertApproxEqRel(
@@ -410,22 +410,22 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
 
         assertEq(
             etherFiLiquid1.totalSupply(),
-            boringVault.balanceOf(address(etherFiLiquid1)),
+            oriusVault.balanceOf(address(etherFiLiquid1)),
             "BV share balance should match V1 total supply."
         );
 
-        // When users withdraw, they receive BoringVault shares.
+        // When users withdraw, they receive OriusVault shares.
         vm.startPrank(user);
-        uint256 boringVaultShareDelta = boringVault.balanceOf(user);
+        uint256 oriusVaultShareDelta = oriusVault.balanceOf(user);
         uint256 cellarSharesRedeemed = 1e18;
         etherFiLiquid1.redeem(1e18, user, user);
-        boringVaultShareDelta = boringVault.balanceOf(user) - boringVaultShareDelta;
+        oriusVaultShareDelta = oriusVault.balanceOf(user) - oriusVaultShareDelta;
         vm.stopPrank();
         assertApproxEqAbs(
-            boringVaultShareDelta, cellarSharesRedeemed, 2, "User should have received BoringVault shares."
+            oriusVaultShareDelta, cellarSharesRedeemed, 2, "User should have received OriusVault shares."
         );
 
-        // Even as the rate changes, users still receieve BoringVault shares at a 1:1 ratio.
+        // Even as the rate changes, users still receieve OriusVault shares at a 1:1 ratio.
         // Rate goes down.
         uint256 newRate = accountant.getRate().mulDivDown(0.95e4, 1e4);
         vm.prank(strategistMultisig);
@@ -435,13 +435,13 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         accountant.unpause();
 
         vm.startPrank(user);
-        boringVaultShareDelta = boringVault.balanceOf(user);
+        oriusVaultShareDelta = oriusVault.balanceOf(user);
         cellarSharesRedeemed = 1e18;
         etherFiLiquid1.redeem(1e18, user, user);
-        boringVaultShareDelta = boringVault.balanceOf(user) - boringVaultShareDelta;
+        oriusVaultShareDelta = oriusVault.balanceOf(user) - oriusVaultShareDelta;
         vm.stopPrank();
         assertApproxEqAbs(
-            boringVaultShareDelta, cellarSharesRedeemed, 2, "User should have received BoringVault shares."
+            oriusVaultShareDelta, cellarSharesRedeemed, 2, "User should have received OriusVault shares."
         );
 
         // Rate goes up.
@@ -453,13 +453,13 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         accountant.unpause();
 
         vm.startPrank(user);
-        boringVaultShareDelta = boringVault.balanceOf(user);
+        oriusVaultShareDelta = oriusVault.balanceOf(user);
         cellarSharesRedeemed = 1e18;
         etherFiLiquid1.redeem(1e18, user, user);
-        boringVaultShareDelta = boringVault.balanceOf(user) - boringVaultShareDelta;
+        oriusVaultShareDelta = oriusVault.balanceOf(user) - oriusVaultShareDelta;
         vm.stopPrank();
         assertApproxEqAbs(
-            boringVaultShareDelta, cellarSharesRedeemed, 2, "User should have received BoringVault shares."
+            oriusVaultShareDelta, cellarSharesRedeemed, 2, "User should have received OriusVault shares."
         );
 
         // If exchangeRate is updated to some extreme value, pause it triggered which causes all Cellar withdraws to revert.
@@ -474,15 +474,15 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         accountant.unpause();
 
         vm.startPrank(user);
-        boringVaultShareDelta = boringVault.balanceOf(user);
+        oriusVaultShareDelta = oriusVault.balanceOf(user);
         cellarSharesRedeemed = 1e18;
         etherFiLiquid1.redeem(1e18, user, user);
-        boringVaultShareDelta = boringVault.balanceOf(user) - boringVaultShareDelta;
+        oriusVaultShareDelta = oriusVault.balanceOf(user) - oriusVaultShareDelta;
         vm.stopPrank();
         /// NOTE in this example the extreme rate was made very small which does introduce more rounding errors, so the abs tolerance
         /// for the assert is increased.
         assertApproxEqAbs(
-            boringVaultShareDelta, cellarSharesRedeemed, 100, "User should have received BoringVault shares."
+            oriusVaultShareDelta, cellarSharesRedeemed, 100, "User should have received OriusVault shares."
         );
 
         // Add migration flow for users that have liquid v1 shares and want to exit using atomic queue.
@@ -495,7 +495,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         vm.prank(liquidMultisig);
         rolesAuthority.setUserRole(address(atomicSolver), SOLVER_ROLE, true);
 
-        // Remove wETH from user and solver so we know it comes from BoringVault.
+        // Remove wETH from user and solver so we know it comes from OriusVault.
         deal(address(WETH), user, 0);
         deal(address(WETH), dev1Address, 0);
 
@@ -573,10 +573,10 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         vm.expectRevert(bytes("MIGRATOR"));
         migrator.completeMigration(true, 10);
 
-        uint256 targetBVShares = boringVault.balanceOf(address(etherFiLiquid1));
+        uint256 targetBVShares = oriusVault.balanceOf(address(etherFiLiquid1));
 
-        // Remove 1 wei boring vault share from target.
-        deal(address(boringVault), address(etherFiLiquid1), targetBVShares - 1);
+        // Remove 1 wei orius vault share from target.
+        deal(address(oriusVault), address(etherFiLiquid1), targetBVShares - 1);
 
         vm.startPrank(liquidMultisig);
         vm.expectRevert(bytes("SHARES"));
@@ -737,14 +737,14 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         }
     }
 
-    function _removeAnyPositionThatIsNotTheBoringVaultPosition(uint32 boringVaultPosition, uint32 eETHPosition)
+    function _removeAnyPositionThatIsNotTheOriusVaultPosition(uint32 oriusVaultPosition, uint32 eETHPosition)
         internal
     {
         // Remove credit positions.
         uint32[] memory creditPositions = etherFiLiquid1.getCreditPositions();
         while (creditPositions.length > 2) {
             for (uint32 i; i < creditPositions.length; i++) {
-                if (creditPositions[i] != boringVaultPosition && creditPositions[i] != eETHPosition) {
+                if (creditPositions[i] != oriusVaultPosition && creditPositions[i] != eETHPosition) {
                     vm.startPrank(strategistMultisig);
                     etherFiLiquid1.removePosition(i, false);
                     etherFiLiquid1.removePositionFromCatalogue(creditPositions[i]);
@@ -759,7 +759,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         uint32[] memory debtPositions = etherFiLiquid1.getDebtPositions();
         while (debtPositions.length > 0) {
             for (uint32 i; i < debtPositions.length; i++) {
-                if (debtPositions[i] != boringVaultPosition) {
+                if (debtPositions[i] != oriusVaultPosition) {
                     vm.startPrank(strategistMultisig);
                     etherFiLiquid1.removePosition(i, true);
                     etherFiLiquid1.removePositionFromCatalogue(debtPositions[i]);
@@ -782,7 +782,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now migrate 1/3 of the aTokens to BoringVault.
+        // Now migrate 1/3 of the aTokens to OriusVault.
         uint256 amountToMigrate = aV3WeETH.balanceOf(address(etherFiLiquid1)) / 3;
         adaptorCalls[0] = abi.encodeWithSignature("deposit(address,uint256,uint256)", aV3WeETH, amountToMigrate, 0);
         data[0] = EtherFiLiquid1.AdaptorCall({adaptor: address(migrationAdaptor), callData: adaptorCalls});
@@ -790,16 +790,16 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now strategist rebalances BoringVault to take out a loan of wETH.
+        // Now strategist rebalances OriusVault to take out a loan of wETH.
         uint256 amountToBorrow = dV3WETH.balanceOf(address(etherFiLiquid1)) / 3;
         vm.startPrank(address(manager));
         bytes memory callData = abi.encodeWithSignature(
-            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(boringVault)
+            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(oriusVault)
         );
-        boringVault.manage(v3Pool, callData, 0);
+        oriusVault.manage(v3Pool, callData, 0);
         vm.stopPrank();
 
-        // Now that the BoringVault is holding wETH, Cellar can redeem some BV tokens for wETH.
+        // Now that the OriusVault is holding wETH, Cellar can redeem some BV tokens for wETH.
         uint256 rate = accountant.getRate();
         uint256 amountToRedeem = amountToBorrow.mulDivDown(1e18, rate);
         adaptorCalls[0] = abi.encodeWithSignature("withdraw(address,uint256,uint256)", WETH, amountToRedeem, 0);
@@ -818,7 +818,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now migrate 1/2 of the aTokens to BoringVault.
+        // Now migrate 1/2 of the aTokens to OriusVault.
         amountToMigrate = aV3WeETH.balanceOf(address(etherFiLiquid1)) / 3;
         adaptorCalls[0] = abi.encodeWithSignature("deposit(address,uint256,uint256)", aV3WeETH, amountToMigrate, 0);
         data[0] = EtherFiLiquid1.AdaptorCall({adaptor: address(migrationAdaptor), callData: adaptorCalls});
@@ -826,16 +826,16 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now strategist rebalances BoringVault to take out a loan of wETH.
+        // Now strategist rebalances OriusVault to take out a loan of wETH.
         amountToBorrow = dV3WETH.balanceOf(address(etherFiLiquid1)) / 2;
         vm.startPrank(address(manager));
         callData = abi.encodeWithSignature(
-            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(boringVault)
+            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(oriusVault)
         );
-        boringVault.manage(v3Pool, callData, 0);
+        oriusVault.manage(v3Pool, callData, 0);
         vm.stopPrank();
 
-        // Now that the BoringVault is holding wETH, Cellar can redeem some BV tokens for wETH.
+        // Now that the OriusVault is holding wETH, Cellar can redeem some BV tokens for wETH.
         rate = accountant.getRate();
         amountToRedeem = amountToBorrow.mulDivDown(1e18, rate);
         adaptorCalls[0] = abi.encodeWithSignature("withdraw(address,uint256,uint256)", WETH, amountToRedeem, 0);
@@ -854,7 +854,7 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now migrate 1/2 of the aTokens to BoringVault.
+        // Now migrate 1/2 of the aTokens to OriusVault.
         amountToMigrate = aV3WeETH.balanceOf(address(etherFiLiquid1)) / 2;
         adaptorCalls[0] = abi.encodeWithSignature("deposit(address,uint256,uint256)", aV3WeETH, amountToMigrate, 0);
         data[0] = EtherFiLiquid1.AdaptorCall({adaptor: address(migrationAdaptor), callData: adaptorCalls});
@@ -862,16 +862,16 @@ contract EtherFiLiquid1MigrationTest is Test, MerkleTreeHelper {
         etherFiLiquid1.callOnAdaptor(data);
         vm.stopPrank();
 
-        // Now strategist rebalances BoringVault to take out a loan of wETH.
+        // Now strategist rebalances OriusVault to take out a loan of wETH.
         amountToBorrow = dV3WETH.balanceOf(address(etherFiLiquid1)) + 1e18; // Borrow extra
         vm.startPrank(address(manager));
         callData = abi.encodeWithSignature(
-            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(boringVault)
+            "borrow(address,uint256,uint256,uint16,address)", WETH, amountToBorrow, 2, 0, address(oriusVault)
         );
-        boringVault.manage(v3Pool, callData, 0);
+        oriusVault.manage(v3Pool, callData, 0);
         vm.stopPrank();
 
-        // Now that the BoringVault is holding wETH, Cellar can redeem some BV tokens for wETH.
+        // Now that the OriusVault is holding wETH, Cellar can redeem some BV tokens for wETH.
         rate = accountant.getRate();
         amountToRedeem = amountToBorrow.mulDivDown(1e18, rate);
         adaptorCalls[0] = abi.encodeWithSignature("withdraw(address,uint256,uint256)", WETH, amountToRedeem, 0);

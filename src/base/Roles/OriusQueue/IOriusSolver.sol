@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-interface IBoringSolver {
-    function boringSolve(
+interface IOriusSolver {
+    function oriusSolve(
         address initiator,
-        address boringVault,
+        address oriusVault,
         address solveAsset,
         uint256 totalShares,
         uint256 requiredAssets,

@@ -71,15 +71,15 @@ contract SymbioticUManager is Auth {
     ManagerWithMerkleVerification internal immutable manager;
 
     /**
-     * @notice The BoringVault this uManager works with.
+     * @notice The OriusVault this uManager works with.
      */
-    address internal immutable boringVault;
+    address internal immutable oriusVault;
 
-    constructor(address _owner, Authority _authoirty, address _manager, address _boringVault)
+    constructor(address _owner, Authority _authoirty, address _manager, address _oriusVault)
         Auth(_owner, Authority(_authoirty))
     {
         manager = ManagerWithMerkleVerification(_manager);
-        boringVault = _boringVault;
+        oriusVault = _oriusVault;
     }
 
     // ========================================= ADMIN FUNCTIONS =========================================
@@ -183,7 +183,7 @@ contract SymbioticUManager is Auth {
      */
     function _assemble(DefaultCollateral defaultCollateral, uint256 amount) internal returns (uint256) {
         ERC20 asset = defaultCollateral.asset();
-        uint256 allowance = asset.allowance(boringVault, address(defaultCollateral));
+        uint256 allowance = asset.allowance(oriusVault, address(defaultCollateral));
 
         address[] memory unoDecoderAndSanitizer = new address[](1);
         {
@@ -225,12 +225,12 @@ contract SymbioticUManager is Auth {
 
         // Deposit the amount.
         unoTarget[0] = address(defaultCollateral);
-        leaf = _buildLeaf(unoDecoderAndSanitizer[0], unoTarget[0], DEPOSIT_SELECTOR, boringVault);
+        leaf = _buildLeaf(unoDecoderAndSanitizer[0], unoTarget[0], DEPOSIT_SELECTOR, oriusVault);
         unoProof[0] = _generateProof(leaf, merkleTree);
-        unoTargetData[0] = abi.encodeWithSelector(DEPOSIT_SELECTOR, boringVault, amount);
+        unoTargetData[0] = abi.encodeWithSelector(DEPOSIT_SELECTOR, oriusVault, amount);
         manager.manageVaultWithMerkleVerification(unoProof, unoDecoderAndSanitizer, unoTarget, unoTargetData, unoZero);
 
-        if (allowance == 0 && asset.allowance(boringVault, address(defaultCollateral)) > 0) {
+        if (allowance == 0 && asset.allowance(oriusVault, address(defaultCollateral)) > 0) {
             // Zero out approval.
             unoTarget[0] = address(asset);
             leaf = _buildLeaf(unoDecoderAndSanitizer[0], unoTarget[0], APPROVE_SELECTOR, address(defaultCollateral));
@@ -260,7 +260,7 @@ contract SymbioticUManager is Auth {
         returns (uint256 max)
     {
         uint256 limitDelta = defaultCollateral.limit() - defaultCollateral.totalSupply();
-        uint256 assetBalance = asset.balanceOf(boringVault);
+        uint256 assetBalance = asset.balanceOf(oriusVault);
 
         if (amount != type(uint256).max) {
             // Bot wants to deposit a specific amount.

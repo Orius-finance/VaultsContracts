@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -44,37 +44,37 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
         rawDataDecoderAndSanitizer = address(
             new EtherFiLiquidDecoderAndSanitizer(
-                address(boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+                address(oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -95,7 +95,7 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -106,13 +106,13 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     // TODO Curve and Convex leafs still need to be added to MerkleTreeHelper.
     function testCurveAndConvexIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 100e18);
 
         // getAddress(sourceChain, "weETH_wETH_Curve_LP")
         // getAddress(sourceChain, "weETH_wETH_Curve_Gauge")
@@ -188,7 +188,7 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
             "",
             getAddress(sourceChain, "rawDataDecoderAndSanitizer")
         );
-        leafs[6].argumentAddresses[0] = address(boringVault);
+        leafs[6].argumentAddresses[0] = address(oriusVault);
         leafs[7] = ManageLeaf(
             getAddress(sourceChain, "weETH_wETH_Curve_Gauge"),
             false,
@@ -205,7 +205,7 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
             "",
             getAddress(sourceChain, "rawDataDecoderAndSanitizer")
         );
-        leafs[8].argumentAddresses[0] = address(boringVault);
+        leafs[8].argumentAddresses[0] = address(oriusVault);
         leafs[9] = ManageLeaf(
             getAddress(sourceChain, "weETH_wETH_Curve_LP"),
             false,
@@ -306,9 +306,9 @@ contract CurveAndConvexIntegrationTest is Test, MerkleTreeHelper {
         targetData[5] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "weETH_wETH_Curve_Gauge"), type(uint256).max
         );
-        targetData[6] = abi.encodeWithSignature("deposit(uint256,address)", lpTokens, address(boringVault));
+        targetData[6] = abi.encodeWithSignature("deposit(uint256,address)", lpTokens, address(oriusVault));
         targetData[7] = abi.encodeWithSignature("withdraw(uint256)", lpTokens);
-        targetData[8] = abi.encodeWithSignature("claim_rewards(address)", address(boringVault));
+        targetData[8] = abi.encodeWithSignature("claim_rewards(address)", address(oriusVault));
         targetData[9] = abi.encodeWithSignature(
             "approve(address,uint256)", getAddress(sourceChain, "convexCurveMainnetBooster"), type(uint256).max
         );

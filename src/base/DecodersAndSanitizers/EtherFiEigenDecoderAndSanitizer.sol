@@ -6,5 +6,5 @@ import {EigenLayerLSTStakingDecoderAndSanitizer} from
     "src/base/DecodersAndSanitizers/Protocols/EigenLayerLSTStakingDecoderAndSanitizer.sol";
 
 contract EtherFiEigenDecoderAndSanitizer is BaseDecoderAndSanitizer, EigenLayerLSTStakingDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 }

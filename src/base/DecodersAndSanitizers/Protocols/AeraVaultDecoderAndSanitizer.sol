@@ -4,7 +4,7 @@ pragma solidity ^0.8.21;
 import {BaseDecoderAndSanitizer, DecoderCustomTypes} from "src/base/DecodersAndSanitizers/BaseDecoderAndSanitizer.sol";
 
 abstract contract AeraVaultDecoderAndSanitizer is BaseDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 
     function deposit(DecoderCustomTypes.AssetValue[] calldata amounts)
         external

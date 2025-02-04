@@ -18,9 +18,9 @@ contract DeployEtherFiEigenScript is DeployArcticArchitecture, MainnetAddresses 
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "ether.fi EIGEN";
-    string public boringVaultSymbol = "eEIGEN";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "ether.fi EIGEN";
+    string public oriusVaultSymbol = "eEIGEN";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev1Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployEtherFiEigenScript is DeployArcticArchitecture, MainnetAddresses 
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = EtherFiEigenRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = EtherFiEigenName;
+        names .oriusVault = EtherFiEigenName;
         names.manager = EtherFiEigenManagerName;
         names.accountant = EtherFiEigenAccountantName;
         names.teller = EtherFiEigenTellerName;
@@ -69,7 +69,7 @@ contract DeployEtherFiEigenScript is DeployArcticArchitecture, MainnetAddresses 
 
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiEigenDecoderAndSanitizer).creationCode;
-        bytes memory constructorArgs = abi.encode(deployer.getAddress(names.boringVault));
+        bytes memory constructorArgs = abi.encode(deployer.getAddress(names .oriusVault));
 
         // Setup extra deposit assets.
         // Setup withdraw assets.
@@ -94,9 +94,9 @@ contract DeployEtherFiEigenScript is DeployArcticArchitecture, MainnetAddresses 
         _deploy(
             "/Mainnet/EtherFiEigenDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

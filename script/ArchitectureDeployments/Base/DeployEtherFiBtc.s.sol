@@ -18,9 +18,9 @@ contract DeployEtherFiBtcScript is DeployArcticArchitecture, BaseAddresses {
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "ether.fi BTC";
-    string public boringVaultSymbol = "eBTC";
-    uint8 public boringVaultDecimals = 8;
+    string public oriusVaultName = "ether.fi BTC";
+    string public oriusVaultSymbol = "eBTC";
+    uint8 public oriusVaultDecimals = 8;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployEtherFiBtcScript is DeployArcticArchitecture, BaseAddresses {
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = EtherFiBtcRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = EtherFiBtcName;
+        names .oriusVault = EtherFiBtcName;
         names.manager = EtherFiBtcManagerName;
         names.accountant = EtherFiBtcAccountantName;
         names.teller = EtherFiBtcTellerName;
@@ -70,7 +70,7 @@ contract DeployEtherFiBtcScript is DeployArcticArchitecture, BaseAddresses {
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiBtcDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
 
@@ -95,9 +95,9 @@ contract DeployEtherFiBtcScript is DeployArcticArchitecture, BaseAddresses {
         _deploy(
             "Base/EtherFiBtcDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

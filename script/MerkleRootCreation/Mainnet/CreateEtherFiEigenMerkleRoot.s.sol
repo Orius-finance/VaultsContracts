@@ -15,7 +15,7 @@ import "forge-std/Script.sol";
 contract CreateEtherFiEigenMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0xE77076518A813616315EaAba6cA8e595E845EeE9;
+    address public oriusVault = 0xE77076518A813616315EaAba6cA8e595E845EeE9;
     address public managerAddress = 0x354ade0382EEC1BF0a444339ABc82931457C2c0e;
     address public accountantAddress = 0x075e60550C6f77f430B284E76aF699bC31651f75;
     address public rawDataDecoderAndSanitizer = 0xb7Dd199ABE801cC4985B60B8B1365264Eb31ad26;
@@ -36,7 +36,7 @@ contract CreateEtherFiEigenMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateAdminMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -64,7 +64,7 @@ contract CreateEtherFiEigenMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateAdminStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

@@ -9,18 +9,18 @@ import {GenericRateProvider} from "src/helper/GenericRateProvider.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthority.sol";
-import {BoringOnChainQueue} from "src/base/Roles/BoringQueue/BoringOnChainQueue.sol";
-import {BoringSolver} from "src/base/Roles/BoringQueue/BoringSolver.sol";
+import {OriusOnChainQueue} from "src/base/Roles/OriusQueue/OriusOnChainQueue.sol";
+import {OriusSolver} from "src/base/Roles/OriusQueue/OriusSolver.sol";
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
 
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
 /**
- *  source .env && forge script script/DeployBoringQueues.s.sol:DeployBoringQueuesScript --with-gas-price 3000000000 --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify
+ *  source .env && forge script script/DeployOriusQueues.s.sol:DeployOriusQueuesScript --with-gas-price 3000000000 --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
-contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
+contract DeployOriusQueuesScript is Script, ContractNames, MerkleTreeHelper {
     using AddressToBytes32Lib for address;
 
     uint256 public privateKey;
@@ -56,7 +56,7 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
         creationCode = type(RolesAuthority).creationCode;
         constructorArgs = abi.encode(devOwner, Authority(address(0)));
         RolesAuthority rolesAuthority = RolesAuthority(
-            deployer.deployContract(BoringOnChainQueuesRolesAuthorityName, creationCode, constructorArgs, 0)
+            deployer.deployContract(OriusOnChainQueuesRolesAuthorityName, creationCode, constructorArgs, 0)
         );
 
         address[] memory assets = new address[](3);
@@ -64,8 +64,8 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
         assets[0] = getAddress(sourceChain, "EETH");
         assets[1] = getAddress(sourceChain, "WEETH");
         assets[2] = getAddress(sourceChain, "WSTETH");
-        BoringOnChainQueue.WithdrawAsset[] memory assetsToSetup = new BoringOnChainQueue.WithdrawAsset[](3);
-        assetsToSetup[0] = BoringOnChainQueue.WithdrawAsset({
+        OriusOnChainQueue.WithdrawAsset[] memory assetsToSetup = new OriusOnChainQueue.WithdrawAsset[](3);
+        assetsToSetup[0] = OriusOnChainQueue.WithdrawAsset({
             allowWithdraws: true, // not used in script.
             secondsToMaturity: 7 days,
             minimumSecondsToDeadline: 3 days,
@@ -73,7 +73,7 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
             maxDiscount: 10,
             minimumShares: 0.0001e18
         });
-        assetsToSetup[1] = BoringOnChainQueue.WithdrawAsset({
+        assetsToSetup[1] = OriusOnChainQueue.WithdrawAsset({
             allowWithdraws: true, // not used in script.
             secondsToMaturity: 7 days,
             minimumSecondsToDeadline: 3 days,
@@ -81,7 +81,7 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
             maxDiscount: 10,
             minimumShares: 0.0001e18
         });
-        assetsToSetup[2] = BoringOnChainQueue.WithdrawAsset({
+        assetsToSetup[2] = OriusOnChainQueue.WithdrawAsset({
             allowWithdraws: true, // not used in script.
             secondsToMaturity: 7 days,
             minimumSecondsToDeadline: 3 days,
@@ -111,26 +111,26 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
     }
 
     function _deployContracts(
-        string memory boringVaultName,
+        string memory oriusVaultName,
         string memory accountantName,
         string memory queueName,
         string memory solverName,
         RolesAuthority rolesAuthority,
         address[] memory assets,
-        BoringOnChainQueue.WithdrawAsset[] memory assetsToSetup
+        OriusOnChainQueue.WithdrawAsset[] memory assetsToSetup
     ) internal {
         bytes memory creationCode;
         bytes memory constructorArgs;
 
-        address boringVault = deployer.getAddress(boringVaultName);
+        address oriusVault = deployer.getAddress(oriusVaultName);
         address accountant = deployer.getAddress(accountantName);
 
-        creationCode = type(BoringOnChainQueue).creationCode;
-        constructorArgs = abi.encode(devOwner, address(rolesAuthority), payable(boringVault), accountant);
-        BoringOnChainQueue queue =
-            BoringOnChainQueue(deployer.deployContract(queueName, creationCode, constructorArgs, 0));
+        creationCode = type(OriusOnChainQueue).creationCode;
+        constructorArgs = abi.encode(devOwner, address(rolesAuthority), payable(oriusVault), accountant);
+        OriusOnChainQueue queue =
+            OriusOnChainQueue(deployer.deployContract(queueName, creationCode, constructorArgs, 0));
 
-        creationCode = type(BoringSolver).creationCode;
+        creationCode = type(OriusSolver).creationCode;
         constructorArgs = abi.encode(devOwner, address(rolesAuthority), address(queue));
         address solver = deployer.deployContract(solverName, creationCode, constructorArgs, 0);
 
@@ -149,46 +149,46 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
         // Setup RolesAuthority.
 
         // Public functions.
-        rolesAuthority.setPublicCapability(address(queue), BoringOnChainQueue.requestOnChainWithdraw.selector, true);
+        rolesAuthority.setPublicCapability(address(queue), OriusOnChainQueue.requestOnChainWithdraw.selector, true);
         rolesAuthority.setPublicCapability(
-            address(queue), BoringOnChainQueue.requestOnChainWithdrawWithPermit.selector, true
+            address(queue), OriusOnChainQueue.requestOnChainWithdrawWithPermit.selector, true
         );
-        rolesAuthority.setPublicCapability(address(queue), BoringOnChainQueue.cancelOnChainWithdraw.selector, true);
-        rolesAuthority.setPublicCapability(address(queue), BoringOnChainQueue.replaceOnChainWithdraw.selector, true);
+        rolesAuthority.setPublicCapability(address(queue), OriusOnChainQueue.cancelOnChainWithdraw.selector, true);
+        rolesAuthority.setPublicCapability(address(queue), OriusOnChainQueue.replaceOnChainWithdraw.selector, true);
         /// @notice By default the self solve functions are not made public.
 
         // CAN_SOLVE_ROLE
         rolesAuthority.setRoleCapability(
-            CAN_SOLVE_ROLE, solver, BoringOnChainQueue.solveOnChainWithdraws.selector, true
+            CAN_SOLVE_ROLE, solver, OriusOnChainQueue.solveOnChainWithdraws.selector, true
         );
-        rolesAuthority.setRoleCapability(CAN_SOLVE_ROLE, solver, BoringSolver.boringRedeemSolve.selector, true);
-        rolesAuthority.setRoleCapability(CAN_SOLVE_ROLE, solver, BoringSolver.boringRedeemMintSolve.selector, true);
+        rolesAuthority.setRoleCapability(CAN_SOLVE_ROLE, solver, OriusSolver .oriusRedeemSolve.selector, true);
+        rolesAuthority.setRoleCapability(CAN_SOLVE_ROLE, solver, OriusSolver .oriusRedeemMintSolve.selector, true);
 
         // ONLY_QUEUE_ROLE
-        rolesAuthority.setRoleCapability(ONLY_QUEUE_ROLE, solver, BoringSolver.boringSolve.selector, true);
+        rolesAuthority.setRoleCapability(ONLY_QUEUE_ROLE, solver, OriusSolver .oriusSolve.selector, true);
 
         // ADMIN_ROLE
         rolesAuthority.setRoleCapability(
-            ADMIN_ROLE, address(queue), BoringOnChainQueue.stopWithdrawsInAsset.selector, true
+            ADMIN_ROLE, address(queue), OriusOnChainQueue.stopWithdrawsInAsset.selector, true
         );
         rolesAuthority.setRoleCapability(
-            ADMIN_ROLE, address(queue), BoringOnChainQueue.cancelUserWithdraws.selector, true
+            ADMIN_ROLE, address(queue), OriusOnChainQueue.cancelUserWithdraws.selector, true
         );
-        rolesAuthority.setRoleCapability(ADMIN_ROLE, address(queue), BoringOnChainQueue.pause.selector, true);
+        rolesAuthority.setRoleCapability(ADMIN_ROLE, address(queue), OriusOnChainQueue.pause.selector, true);
 
         // SUPER_ADMIN_ROLE
         rolesAuthority.setRoleCapability(
-            SUPER_ADMIN_ROLE, address(queue), BoringOnChainQueue.updateWithdrawAsset.selector, true
+            SUPER_ADMIN_ROLE, address(queue), OriusOnChainQueue.updateWithdrawAsset.selector, true
         );
-        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, address(queue), BoringOnChainQueue.pause.selector, true);
-        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, address(queue), BoringOnChainQueue.unpause.selector, true);
+        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, address(queue), OriusOnChainQueue.pause.selector, true);
+        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, address(queue), OriusOnChainQueue.unpause.selector, true);
         rolesAuthority.setRoleCapability(
-            SUPER_ADMIN_ROLE, address(queue), BoringOnChainQueue.stopWithdrawsInAsset.selector, true
+            SUPER_ADMIN_ROLE, address(queue), OriusOnChainQueue.stopWithdrawsInAsset.selector, true
         );
         rolesAuthority.setRoleCapability(
-            SUPER_ADMIN_ROLE, address(queue), BoringOnChainQueue.rescueTokens.selector, true
+            SUPER_ADMIN_ROLE, address(queue), OriusOnChainQueue.rescueTokens.selector, true
         );
-        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, solver, BoringOnChainQueue.rescueTokens.selector, true);
+        rolesAuthority.setRoleCapability(SUPER_ADMIN_ROLE, solver, OriusOnChainQueue.rescueTokens.selector, true);
 
         // Give Queue the OnlyQueue role.
         rolesAuthority.setUserRole(address(queue), ONLY_QUEUE_ROLE, true);
@@ -196,6 +196,6 @@ contract DeployBoringQueuesScript is Script, ContractNames, MerkleTreeHelper {
 
         // Transfer ownership.
         queue.transferOwnership(globalOwner);
-        BoringSolver(solver).transferOwnership(globalOwner);
+        OriusSolver(solver).transferOwnership(globalOwner);
     }
 }

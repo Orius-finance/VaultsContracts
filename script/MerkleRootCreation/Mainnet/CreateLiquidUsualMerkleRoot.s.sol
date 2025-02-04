@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 contract CreateLiquidUsualMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0xeDa663610638E6557c27e2f4e973D3393e844E70;
+    address public oriusVault = 0xeDa663610638E6557c27e2f4e973D3393e844E70;
     address public rawDataDecoderAndSanitizer = 0xA8633d10B828f80383D57a63914Fd23D6F71B157;
     address public managerAddress = 0x5F2Ecb56Ed33c86219840A2F89316285A1D9ee0F;
     address public accountantAddress = 0x1D4F0F05e50312d3E7B65659Ef7d06aa74651e0C;
@@ -30,7 +30,7 @@ contract CreateLiquidUsualMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateLiquidUsualStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

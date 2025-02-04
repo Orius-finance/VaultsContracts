@@ -1,6 +1,6 @@
 pragma solidity ^0.8.21;
 
-import {BoringVault, ERC20} from "src/base/BoringVault.sol";
+import {OriusVault, ERC20} from "src/base/OriusVault.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {DelayedWithdraw} from "src/base/Roles/DelayedWithdraw.sol";
@@ -12,69 +12,69 @@ contract ArcticArchitectureLens {
     using Address for address;
 
     /**
-     * @dev Calculates the total assets held in the BoringVault for a given vault and accountant.
-     * @param boringVault The BoringVault contract.
+     * @dev Calculates the total assets held in the OriusVault for a given vault and accountant.
+     * @param oriusVault The OriusVault contract.
      * @param accountant The AccountantWithRateProviders contract.
      * @return asset The ERC20 asset, `assets` is given in terms of.
      * @return assets The total assets held in the vault.
      */
-    function totalAssets(BoringVault boringVault, AccountantWithRateProviders accountant)
+    function totalAssets(OriusVault oriusVault, AccountantWithRateProviders accountant)
         external
         view
         returns (ERC20 asset, uint256 assets)
     {
-        uint256 totalSupply = boringVault.totalSupply();
+        uint256 totalSupply = oriusVault.totalSupply();
         uint256 rate = accountant.getRate();
-        uint8 shareDecimals = boringVault.decimals();
+        uint8 shareDecimals = oriusVault.decimals();
         asset = accountant.base();
 
         assets = totalSupply.mulDivDown(rate, 10 ** shareDecimals);
     }
 
     /**
-     * @dev Calculates the number of shares that will be received for a given deposit amount in the BoringVault.
+     * @dev Calculates the number of shares that will be received for a given deposit amount in the OriusVault.
      * @param depositAsset The ERC20 asset being deposited.
      * @param depositAmount The amount of the asset being deposited.
-     * @param boringVault The BoringVault contract.
+     * @param oriusVault The OriusVault contract.
      * @param accountant The AccountantWithRateProviders contract.
      * @return shares The number of shares that will be received.
      */
     function previewDeposit(
         ERC20 depositAsset,
         uint256 depositAmount,
-        BoringVault boringVault,
+        OriusVault oriusVault,
         AccountantWithRateProviders accountant
     ) external view returns (uint256 shares) {
-        uint8 shareDecimals = boringVault.decimals();
+        uint8 shareDecimals = oriusVault.decimals();
 
         shares = depositAmount.mulDivDown(10 ** shareDecimals, accountant.getRateInQuote(depositAsset));
     }
 
     /**
-     * @dev Retrieves the balance of shares for a given account in the BoringVault.
+     * @dev Retrieves the balance of shares for a given account in the OriusVault.
      * @param account The address of the account.
-     * @param boringVault The BoringVault contract.
+     * @param oriusVault The OriusVault contract.
      * @return shares The balance of shares for the account.
      */
-    function balanceOf(address account, BoringVault boringVault) external view returns (uint256 shares) {
-        shares = boringVault.balanceOf(account);
+    function balanceOf(address account, OriusVault oriusVault) external view returns (uint256 shares) {
+        shares = oriusVault.balanceOf(account);
     }
 
     /**
-     * @dev Calculates the balance of a user in terms of asset for a given account in the BoringVault.
+     * @dev Calculates the balance of a user in terms of asset for a given account in the OriusVault.
      * @param account The address of the account.
-     * @param boringVault The BoringVault contract.
+     * @param oriusVault The OriusVault contract.
      * @param accountant The AccountantWithRateProviders contract.
      * @return assets The balance of assets for the account.
      */
-    function balanceOfInAssets(address account, BoringVault boringVault, AccountantWithRateProviders accountant)
+    function balanceOfInAssets(address account, OriusVault oriusVault, AccountantWithRateProviders accountant)
         external
         view
         returns (uint256 assets)
     {
-        uint256 shares = boringVault.balanceOf(account);
+        uint256 shares = oriusVault.balanceOf(account);
         uint256 rate = accountant.getRate();
-        uint8 shareDecimals = boringVault.decimals();
+        uint8 shareDecimals = oriusVault.decimals();
 
         assets = shares.mulDivDown(rate, 10 ** shareDecimals);
     }
@@ -93,7 +93,7 @@ contract ArcticArchitectureLens {
      * @param account The address of the user.
      * @param depositAsset The ERC20 asset being deposited.
      * @param depositAmount The amount of the asset being deposited.
-     * @param boringVault The BoringVault contract.
+     * @param oriusVault The OriusVault contract.
      * @param teller The TellerWithMultiAssetSupport contract.
      * @return A boolean indicating if the user's deposit meets the conditions.
      */
@@ -101,11 +101,11 @@ contract ArcticArchitectureLens {
         address account,
         ERC20 depositAsset,
         uint256 depositAmount,
-        BoringVault boringVault,
+        OriusVault oriusVault,
         TellerWithMultiAssetSupport teller
     ) external view returns (bool) {
         if (depositAsset.balanceOf(account) < depositAmount) return false;
-        if (depositAsset.allowance(account, address(boringVault)) < depositAmount) return false;
+        if (depositAsset.allowance(account, address(oriusVault)) < depositAmount) return false;
         if (teller.isPaused()) return false;
         (bool allowDeposits,,) = teller.assetData(depositAsset);
         if (!allowDeposits) return false;
@@ -202,7 +202,7 @@ contract ArcticArchitectureLens {
     function previewWithdraw(
         ERC20 asset,
         address account,
-        BoringVault boringVault,
+        OriusVault oriusVault,
         AccountantWithRateProviders accountant,
         DelayedWithdraw delayedWithdraw
     ) public view returns (PreviewWithdrawResult memory res) {
@@ -249,10 +249,10 @@ contract ArcticArchitectureLens {
         }
 
         // Calculate assets out.
-        res.assetsOut = shares.mulDivDown(minRate, 10 ** boringVault.decimals());
+        res.assetsOut = shares.mulDivDown(minRate, 10 ** oriusVault.decimals());
 
         if (pullFundsFromVault) {
-            if (asset.balanceOf(address(boringVault)) < res.assetsOut) {
+            if (asset.balanceOf(address(oriusVault)) < res.assetsOut) {
                 res.notEnoughAssetsForWithdraw = true;
             }
         } else {
@@ -268,7 +268,7 @@ contract ArcticArchitectureLens {
     function previewWithdraws(
         ERC20[] calldata assets,
         address[] calldata accounts,
-        BoringVault boringVault,
+        OriusVault oriusVault,
         AccountantWithRateProviders accountant,
         DelayedWithdraw delayedWithdraw
     ) external view returns (PreviewWithdrawResult[] memory res) {
@@ -276,7 +276,7 @@ contract ArcticArchitectureLens {
         res = new PreviewWithdrawResult[](assetsLength);
 
         for (uint256 i = 0; i < assetsLength; i++) {
-            res[i] = previewWithdraw(assets[i], accounts[i], boringVault, accountant, delayedWithdraw);
+            res[i] = previewWithdraw(assets[i], accounts[i], oriusVault, accountant, delayedWithdraw);
         }
     }
 }

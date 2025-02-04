@@ -8,12 +8,12 @@ contract BaseDecoderAndSanitizer {
     //============================== IMMUTABLES ===============================
 
     /**
-     * @notice The BoringVault contract address.
+     * @notice The OriusVault contract address.
      */
-    address internal immutable boringVault;
+    address internal immutable oriusVault;
 
-    constructor(address _boringVault) {
-        boringVault = _boringVault;
+    constructor(address _oriusVault) {
+        oriusVault = _oriusVault;
     }
 
     function approve(address spender, uint256) external pure returns (bytes memory addressesFound) {
@@ -32,7 +32,7 @@ contract BaseDecoderAndSanitizer {
         addressesFound = abi.encodePacked(yieldAsset);
     }
 
-    function withdrawNonBoringToken(address token, uint256 /*amount*/ )
+    function withdrawNonOriusToken(address token, uint256 /*amount*/ )
         external
         pure
         returns (bytes memory addressesFound)

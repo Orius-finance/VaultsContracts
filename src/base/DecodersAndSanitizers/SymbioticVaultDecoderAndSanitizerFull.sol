@@ -6,7 +6,7 @@ import {SymbioticVaultDecoderAndSanitizer} from
     "src/base/DecodersAndSanitizers/Protocols/SymbioticVaultDecoderAndSanitizer.sol";
 
 contract SymbioticVaultDecoderAndSanitizerFull is BaseDecoderAndSanitizer, SymbioticVaultDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 
     //============================== HANDLE FUNCTION COLLISIONS ===============================
 }

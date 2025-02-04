@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ChainlinkCCIPTeller} from "src/base/Roles/CrossChain/Bridges/CCIP/ChainlinkCCIPTeller.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -21,7 +21,7 @@ contract ChainlinkCCIPTellerTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant ADMIN_ROLE = 1;
     uint8 public constant MINTER_ROLE = 7;
@@ -71,31 +71,31 @@ contract ChainlinkCCIPTellerTest is Test, MerkleTreeHelper {
         mantleLspStaking = getAddress(sourceChain, "mantleLspStaking");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         router = new MockCCIPRouter();
 
         sourceTeller = new ChainlinkCCIPTeller(
-            address(this), address(boringVault), address(accountant), address(WETH), address(router)
+            address(this), address(oriusVault), address(accountant), address(WETH), address(router)
         );
 
         destinationTeller = new ChainlinkCCIPTeller(
-            address(this), address(boringVault), address(accountant), address(WETH), address(router)
+            address(this), address(oriusVault), address(accountant), address(WETH), address(router)
         );
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         sourceTeller.setAuthority(rolesAuthority);
         destinationTeller.setAuthority(rolesAuthority);
 
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
 
         rolesAuthority.setUserRole(address(sourceTeller), MINTER_ROLE, true);
         rolesAuthority.setUserRole(address(sourceTeller), BURNER_ROLE, true);
@@ -120,15 +120,15 @@ contract ChainlinkCCIPTellerTest is Test, MerkleTreeHelper {
         router.setSenderToSelector(address(sourceTeller), SOURCE_SELECTOR);
         router.setSenderToSelector(address(destinationTeller), DESTINATION_SELECTOR);
 
-        // Give BoringVault some WETH, and this address some shares, and LINK.
-        deal(address(WETH), address(boringVault), 1_000e18);
-        deal(address(boringVault), address(this), 1_000e18, true);
+        // Give OriusVault some WETH, and this address some shares, and LINK.
+        deal(address(WETH), address(oriusVault), 1_000e18);
+        deal(address(oriusVault), address(this), 1_000e18, true);
         deal(address(LINK), address(this), 1_000e18);
     }
 
     function testBridgingShares(uint96 sharesToBridge) external {
         sharesToBridge = uint96(bound(sharesToBridge, 1, 1_000e18));
-        uint256 startingShareBalance = boringVault.balanceOf(address(this));
+        uint256 startingShareBalance = oriusVault.balanceOf(address(this));
         // Setup chains on bridge.
         sourceTeller.addChain(DESTINATION_SELECTOR, true, true, address(destinationTeller), 100_000);
         destinationTeller.addChain(SOURCE_SELECTOR, true, true, address(sourceTeller), 100_000);
@@ -140,7 +140,7 @@ contract ChainlinkCCIPTellerTest is Test, MerkleTreeHelper {
         sourceTeller.bridge(sharesToBridge, to, abi.encode(DESTINATION_SELECTOR), LINK, expectedFee);
 
         assertEq(
-            boringVault.balanceOf(address(this)), startingShareBalance - sharesToBridge, "Should have burned shares."
+            oriusVault.balanceOf(address(this)), startingShareBalance - sharesToBridge, "Should have burned shares."
         );
 
         Client.Any2EVMMessage memory m = router.getLastMessage();
@@ -149,7 +149,7 @@ contract ChainlinkCCIPTellerTest is Test, MerkleTreeHelper {
         vm.prank(address(router));
         destinationTeller.ccipReceive(m);
 
-        assertEq(boringVault.balanceOf(to), sharesToBridge, "To address should have received shares.");
+        assertEq(oriusVault.balanceOf(to), sharesToBridge, "To address should have received shares.");
     }
 
     function testPreviewFee(uint256 fee) external {

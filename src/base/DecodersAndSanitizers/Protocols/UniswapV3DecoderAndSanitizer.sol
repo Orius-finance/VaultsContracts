@@ -62,7 +62,7 @@ abstract contract UniswapV3DecoderAndSanitizer is BaseDecoderAndSanitizer {
         returns (bytes memory addressesFound)
     {
         // Sanitize raw data
-        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert UniswapV3DecoderAndSanitizer__BadTokenId();
         }
         // Extract addresses from uniswapV3NonFungiblePositionManager.positions(params.tokenId).
@@ -80,7 +80,7 @@ abstract contract UniswapV3DecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert UniswapV3DecoderAndSanitizer__BadTokenId();
         }
 
@@ -97,7 +97,7 @@ abstract contract UniswapV3DecoderAndSanitizer is BaseDecoderAndSanitizer {
         // Sanitize raw data
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
-        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != boringVault) {
+        if (uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId) != oriusVault) {
             revert UniswapV3DecoderAndSanitizer__BadTokenId();
         }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithFixedRate} from "src/base/Roles/AccountantWithFixedRate.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -18,7 +18,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     AccountantWithFixedRate public accountant;
     address public payout_address = vm.addr(7777777);
     RolesAuthority public rolesAuthority;
@@ -28,7 +28,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
     uint8 public constant MINTER_ROLE = 1;
     uint8 public constant ADMIN_ROLE = 2;
     uint8 public constant UPDATE_EXCHANGE_RATE_ROLE = 3;
-    uint8 public constant BORING_VAULT_ROLE = 4;
+    uint8 public constant ORIUS_VAULT_ROLE = 4;
 
     ERC20 internal WETH;
     ERC20 internal EETH;
@@ -61,11 +61,11 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         mantleLspStaking = getAddress(sourceChain, "mantleLspStaking");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithFixedRate(
             address(this),
-            address(boringVault),
+            address(oriusVault),
             payout_address,
             1e18,
             address(WETH),
@@ -78,20 +78,20 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
         accountant.setAuthority(rolesAuthority);
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
 
         // Setup roles authority.
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
 
         rolesAuthority.setUserRole(address(this), MINTER_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(this), UPDATE_EXCHANGE_RATE_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         deal(address(WETH), address(this), 1_000e18);
-        WETH.safeApprove(address(boringVault), 1_000e18);
-        boringVault.enter(address(this), WETH, 1_000e18, address(address(this)), 1_000e18);
+        WETH.safeApprove(address(oriusVault), 1_000e18);
+        oriusVault.enter(address(this), WETH, 1_000e18, address(address(this)), 1_000e18);
 
         accountant.setRateProviderData(EETH, true, address(0));
         accountant.setRateProviderData(WEETH, false, address(WEETH_RATE_PROVIDER));
@@ -123,7 +123,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
 
         (uint96 firstYield,) = accountant.fixedRateAccountantState();
 
-        uint256 totalSupply = boringVault.totalSupply(); // Also equal to min assets since exchange rate started at 1e18.
+        uint256 totalSupply = oriusVault.totalSupply(); // Also equal to min assets since exchange rate started at 1e18.
         uint256 grossYield = uint256(firstUpdate - 1e18).mulDivDown(totalSupply, 1e18);
         // Calculate platform fee.
         uint256 expectedFee = totalSupply.mulDivDown(platformFee, 1e4);
@@ -160,20 +160,20 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         (uint96 yieldEarned, address distributor) = accountant.fixedRateAccountantState();
         assertGt(yieldEarned, 0, "Yield earned should be greater than 0");
 
-        // Boring Vault approves accountant to spend wETH.
-        vm.prank(address(boringVault));
+        // Orius Vault approves accountant to spend wETH.
+        vm.prank(address(oriusVault));
         WETH.approve(address(accountant), yieldEarned);
 
-        uint256 boringVaultBalance = WETH.balanceOf(address(boringVault));
+        uint256 oriusVaultBalance = WETH.balanceOf(address(oriusVault));
 
         // Distributor calls claimYield.
         vm.prank(distributor);
         accountant.claimYield(WETH);
 
         assertEq(
-            WETH.balanceOf(address(boringVault)),
-            boringVaultBalance - yieldEarned,
-            "Boring Vault balance should decrease"
+            WETH.balanceOf(address(oriusVault)),
+            oriusVaultBalance - yieldEarned,
+            "Orius Vault balance should decrease"
         );
         assertEq(WETH.balanceOf(yieldDistributor), yieldEarned, "Yield distributor balance should increase");
 
@@ -235,7 +235,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         (uint96 yieldEarned,) = accountant.fixedRateAccountantState();
 
         // The platform fee should be forfeited, but yield and performance fees should be calculated.
-        uint256 totalSupply = boringVault.totalSupply(); // Also equal to min assets since exchange rate started at 1e18.
+        uint256 totalSupply = oriusVault.totalSupply(); // Also equal to min assets since exchange rate started at 1e18.
         uint256 grossYield = uint256(newExchangeRate - 1e18).mulDivDown(totalSupply, 1e18);
         uint256 expectedFee = grossYield.mulDivDown(performanceFee, 1e4);
 
@@ -258,8 +258,8 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         // Now we need to make the share supply so large that casting the yield earned to uint96 overflows.
         uint256 sharesToAdd = 15_000_000_000e18;
         deal(address(WETH), address(this), sharesToAdd);
-        WETH.safeApprove(address(boringVault), sharesToAdd);
-        boringVault.enter(address(this), WETH, sharesToAdd, address(address(this)), sharesToAdd);
+        WETH.safeApprove(address(oriusVault), sharesToAdd);
+        oriusVault.enter(address(this), WETH, sharesToAdd, address(address(this)), sharesToAdd);
 
         accountant.updateExchangeRate(1e18);
 
@@ -292,7 +292,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         uint256 newRate = 1.02e18;
         accountant.updateExchangeRate(uint96(newRate));
 
-        uint256 totalSupply = boringVault.totalSupply();
+        uint256 totalSupply = oriusVault.totalSupply();
         uint256 grossYield = uint256(newRate - 1e18).mulDivDown(totalSupply, 1e18);
 
         // Calculate expected platform fee
@@ -320,7 +320,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         uint256 newRate = 1.02e18;
         accountant.updateExchangeRate(uint96(newRate));
 
-        uint256 totalSupply = boringVault.totalSupply();
+        uint256 totalSupply = oriusVault.totalSupply();
         uint256 grossYield = uint256(newRate - 1e18).mulDivDown(totalSupply, 1e18);
 
         // Calculate expected performance fee
@@ -348,7 +348,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         uint256 newRate = 1.02e18;
         accountant.updateExchangeRate(uint96(newRate));
 
-        uint256 totalSupply = boringVault.totalSupply();
+        uint256 totalSupply = oriusVault.totalSupply();
         uint256 grossYield = uint256(newRate - 1e18).mulDivDown(totalSupply, 1e18);
 
         // Check yield earned - should equal gross yield since no fees
@@ -382,7 +382,7 @@ contract AccountantWithFixedRateTest is Test, MerkleTreeHelper {
         );
         new AccountantWithFixedRate(
             address(this),
-            address(boringVault),
+            address(oriusVault),
             payout_address,
             1.01e18,
             address(WETH),

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -43,31 +43,31 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new EtherFiLiquidEthDecoderAndSanitizer(address(boringVault), address(0)));
+        rawDataDecoderAndSanitizer = address(new EtherFiLiquidEthDecoderAndSanitizer(address(oriusVault), address(0)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -88,7 +88,7 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -99,11 +99,11 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
 
         // Make the leaf index zero so that the tests do not need to be refactored.
         leafIndex = 0;
@@ -127,18 +127,18 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
         targets[0] = getAddress(sourceChain, "merklDistributor");
 
         bytes[] memory targetData = new bytes[](1);
-        targetData[0] = abi.encodeWithSignature("toggleOperator(address,address)", boringVault, operator);
+        targetData[0] = abi.encodeWithSignature("toggleOperator(address,address)", oriusVault, operator);
         uint256[] memory values = new uint256[](1);
         address[] memory decodersAndSanitizers = new address[](1);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
 
         MerklDistributor distributor = MerklDistributor(getAddress(sourceChain, "merklDistributor"));
 
-        assertEq(distributor.operators(address(boringVault), operator), 0, "Operator should be set to false");
+        assertEq(distributor.operators(address(oriusVault), operator), 0, "Operator should be set to false");
 
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        assertEq(distributor.operators(address(boringVault), operator), 1, "Operator should be set to true");
+        assertEq(distributor.operators(address(oriusVault), operator), 1, "Operator should be set to true");
     }
 
     function testClaiming() external {
@@ -149,16 +149,16 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
             address operator = address(4444);
             ERC20[] memory tokensToClaim = new ERC20[](1);
             tokensToClaim[0] = getERC20(sourceChain, "UNI");
-            // We set the boring vault address to be the user so the proper leaf is created.
-            setAddress(true, sourceChain, "boringVault", user);
+            // We set the orius vault address to be the user so the proper leaf is created.
+            setAddress(true, sourceChain, "oriusVault", user);
             _addMerklLeafs(leafs, getAddress(sourceChain, "merklDistributor"), operator, tokensToClaim);
         }
 
         MerklDistributor distributor = MerklDistributor(getAddress(sourceChain, "merklDistributor"));
 
-        // Sppof user address so that they allow the BoringVault to claim.
+        // Sppof user address so that they allow the OriusVault to claim.
         vm.prank(user);
-        distributor.toggleOperator(user, address(boringVault));
+        distributor.toggleOperator(user, address(oriusVault));
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
 
@@ -217,7 +217,7 @@ contract MerklIntegrationTest is Test, MerkleTreeHelper {
             address operator = address(4444);
             ERC20[] memory tokensToClaim = new ERC20[](1);
             tokensToClaim[0] = getERC20(sourceChain, "UNI");
-            // We set the boring vault address to be the user so the proper leaf is created.
+            // We set the orius vault address to be the user so the proper leaf is created.
             _addMerklLeafs(leafs, getAddress(sourceChain, "merklDistributor"), operator, tokensToClaim);
         }
 

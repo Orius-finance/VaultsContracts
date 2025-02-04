@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -19,14 +19,14 @@ import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper
 
 import {Test, stdStorage, StdStorage, stdError, console} from "@forge-std/Test.sol";
 
-contract BoringVaultIntegrationTest is Test, MerkleTreeHelper {
+contract OriusVaultIntegrationTest is Test, MerkleTreeHelper {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public liquidEth;
+    OriusVault public liquidEth;
     ManagerWithMerkleVerification public liquidEthManager;
-    BoringVault public superSymbiotic;
+    OriusVault public superSymbiotic;
     TellerWithMultiAssetSupport public superSymbioticTeller;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
@@ -43,9 +43,9 @@ contract BoringVaultIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        liquidEth = BoringVault(payable(getAddress(sourceChain, "liquidEth")));
+        liquidEth = OriusVault(payable(getAddress(sourceChain, "liquidEth")));
         liquidEthManager = ManagerWithMerkleVerification(getAddress(sourceChain, "liquidEthManager"));
-        superSymbiotic = BoringVault(payable(getAddress(sourceChain, "superSymbiotic")));
+        superSymbiotic = OriusVault(payable(getAddress(sourceChain, "superSymbiotic")));
         superSymbioticTeller = TellerWithMultiAssetSupport(getAddress(sourceChain, "superSymbioticTeller"));
 
         rawDataDecoderAndSanitizer = address(
@@ -54,7 +54,7 @@ contract BoringVaultIntegrationTest is Test, MerkleTreeHelper {
             )
         );
 
-        setAddress(false, sourceChain, "boringVault", address(liquidEth));
+        setAddress(false, sourceChain, "oriusVault", address(liquidEth));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(liquidEthManager));
         setAddress(false, sourceChain, "managerAddress", address(liquidEthManager));
@@ -73,7 +73,7 @@ contract BoringVaultIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(liquidEth), SOLVER_ROLE, true);
     }
 
-    function testBoringVaultDepositAndWithdraw() external {
+    function testOriusVaultDepositAndWithdraw() external {
         deal(getAddress(sourceChain, "WETH"), address(liquidEth), 1_000e18);
         deal(getAddress(sourceChain, "WEETH"), address(liquidEth), 1_000e18);
 

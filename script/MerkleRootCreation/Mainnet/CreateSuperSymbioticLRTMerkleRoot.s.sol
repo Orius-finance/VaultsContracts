@@ -15,7 +15,7 @@ import "forge-std/Script.sol";
 contract CreateSuperSymbioticLRTMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x917ceE801a67f933F2e6b33fC0cD1ED2d5909D88;
+    address public oriusVault = 0x917ceE801a67f933F2e6b33fC0cD1ED2d5909D88;
     address public managerAddress = 0xA24dD7B978Fbe36125cC4817192f7b8AA18d213c;
     address public accountantAddress = 0xbe16605B22a7faCEf247363312121670DFe5afBE;
     address public rawDataDecoderAndSanitizer = 0x210c179758430646C83f5Da08C7b2bc73c9aAD55;
@@ -33,7 +33,7 @@ contract CreateSuperSymbioticLRTMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateSniperMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -59,7 +59,7 @@ contract CreateSuperSymbioticLRTMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateAdminStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);

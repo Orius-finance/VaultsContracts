@@ -6,5 +6,5 @@ import {LombardBTCMinterDecoderAndSanitizer} from
     "src/base/DecodersAndSanitizers/Protocols/LombardBtcMinterDecoderAndSanitizer.sol";
 
 contract LombardBTCFullMinterDecoderAndSanitizer is LombardBTCMinterDecoderAndSanitizer {
-    constructor(address _boringVault) BaseDecoderAndSanitizer(_boringVault) {}
+    constructor(address _oriusVault) BaseDecoderAndSanitizer(_oriusVault) {}
 }

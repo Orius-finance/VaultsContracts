@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -21,7 +21,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -29,7 +29,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -39,7 +39,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
     function testTermFinanceIntegrationLockOffer() public {
         _setupEnv(20684989);
         address weth = getAddress(sourceChain, "WETH");
-        deal(weth, address(boringVault), 10000e18);
+        deal(weth, address(oriusVault), 10000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         ERC20[] memory purchaseTokens = new ERC20[](1);
@@ -69,8 +69,8 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
         );
         DecoderCustomTypes.TermAuctionOfferSubmission memory termAuctionOfferSubmission = DecoderCustomTypes
             .TermAuctionOfferSubmission(
-            keccak256(abi.encodePacked(uint256(block.timestamp), address(boringVault))),
-            address(boringVault),
+            keccak256(abi.encodePacked(uint256(block.timestamp), address(oriusVault))),
+            address(oriusVault),
             keccak256(abi.encode(uint256(10e17), uint256(1e18))),
             2e18,
             weth
@@ -111,8 +111,8 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
 
         bytes[] memory targetData = new bytes[](1);
         bytes32[] memory offerIds = new bytes32[](1);
-        bytes32 idHash = keccak256(abi.encodePacked(uint256(block.timestamp), address(boringVault)));
-        offerIds[0] = keccak256(abi.encodePacked(idHash, address(boringVault), termAuctionOfferLockers[0]));
+        bytes32 idHash = keccak256(abi.encodePacked(uint256(block.timestamp), address(oriusVault)));
+        offerIds[0] = keccak256(abi.encodePacked(idHash, address(oriusVault), termAuctionOfferLockers[0]));
         targetData[0] = abi.encodeWithSignature("unlockOffers(bytes32[])", offerIds);
 
         address[] memory decodersAndSanitizers = new address[](1);
@@ -124,7 +124,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
 
     function testTermFinanceIntegrationRevealOffer() external {
         testTermFinanceIntegrationLockOffer();
-        bytes32 idHash = keccak256(abi.encodePacked(uint256(block.timestamp), address(boringVault)));
+        bytes32 idHash = keccak256(abi.encodePacked(uint256(block.timestamp), address(oriusVault)));
 
         vm.warp(1725555601);
         leafIndex = type(uint256).max;
@@ -147,7 +147,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
 
         bytes[] memory targetData = new bytes[](1);
         bytes32[] memory offerIds = new bytes32[](1);
-        offerIds[0] = keccak256(abi.encodePacked(idHash, address(boringVault), termAuctionOfferLockers[0]));
+        offerIds[0] = keccak256(abi.encodePacked(idHash, address(oriusVault), termAuctionOfferLockers[0]));
 
         uint256[] memory prices = new uint256[](1);
         prices[0] = uint256(10e17);
@@ -168,7 +168,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
         _setupEnv(20896437);
 
         address termRepoToken = getAddress(sourceChain, "termRepoToken");
-        deal(termRepoToken, address(boringVault), 10e18);
+        deal(termRepoToken, address(oriusVault), 10e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2); // only need 1 leaf, but _generateMerkleTree needs at least 2.
         address[] memory termRepoServicers = new address[](1);
@@ -189,7 +189,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
         targets[0] = getAddress(sourceChain, "termRepoServicer");
 
         bytes[] memory targetData = new bytes[](1);
-        targetData[0] = abi.encodeWithSignature("redeemTermRepoTokens(address,uint256)", address(boringVault), 10e18);
+        targetData[0] = abi.encodeWithSignature("redeemTermRepoTokens(address,uint256)", address(oriusVault), 10e18);
 
         address[] memory decodersAndSanitizers = new address[](1);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
@@ -205,33 +205,33 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "MAINNET_RPC_URL";
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new TermFinanceDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new TermFinanceDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -252,7 +252,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -263,7 +263,7 @@ contract TermFinanceIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 

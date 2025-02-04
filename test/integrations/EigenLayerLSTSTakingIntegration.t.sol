@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -47,33 +47,33 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new StakingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -94,7 +94,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -105,12 +105,12 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testEigenLayerLSTStakingIntegration() external {
-        deal(getAddress(sourceChain, "METH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "METH"), address(oriusVault), 1_000e18);
 
         // approve
         // Call deposit
@@ -160,7 +160,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
         queuedParams[0].strategies[0] = getAddress(sourceChain, "mETHStrategy");
         queuedParams[0].shares = new uint256[](1);
         queuedParams[0].shares[0] = 1_000e18;
-        queuedParams[0].withdrawer = address(boringVault);
+        queuedParams[0].withdrawer = address(oriusVault);
         targetData[2] = abi.encodeWithSignature("queueWithdrawals((address[],uint256[],address)[])", queuedParams);
 
         address[] memory decodersAndSanitizers = new address[](3);
@@ -188,9 +188,9 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         DecoderCustomTypes.Withdrawal[] memory withdrawParams = new DecoderCustomTypes.Withdrawal[](1);
-        withdrawParams[0].staker = address(boringVault);
+        withdrawParams[0].staker = address(oriusVault);
         withdrawParams[0].delegatedTo = address(0);
-        withdrawParams[0].withdrawer = address(boringVault);
+        withdrawParams[0].withdrawer = address(oriusVault);
         withdrawParams[0].nonce = 0;
         withdrawParams[0].startBlock = withdrawRequestBlock;
         withdrawParams[0].strategies = new address[](1);
@@ -220,14 +220,14 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "METH").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "METH").balanceOf(address(oriusVault)),
             1_000e18,
-            "BoringVault should have received 1,000 METH"
+            "OriusVault should have received 1,000 METH"
         );
     }
 
     function testEigenLayerLSTStakingReverts() external {
-        deal(getAddress(sourceChain, "METH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "METH"), address(oriusVault), 1_000e18);
 
         // approve
         // Call deposit
@@ -277,7 +277,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
         queuedParams[0].strategies[0] = getAddress(sourceChain, "mETHStrategy");
         queuedParams[0].shares = new uint256[](1);
         queuedParams[0].shares[0] = 1_000e18;
-        queuedParams[0].withdrawer = address(boringVault);
+        queuedParams[0].withdrawer = address(oriusVault);
         targetData[2] = abi.encodeWithSignature("queueWithdrawals((address[],uint256[],address)[])", queuedParams);
 
         address[] memory decodersAndSanitizers = new address[](3);
@@ -305,9 +305,9 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
 
         targetData = new bytes[](1);
         DecoderCustomTypes.Withdrawal[] memory withdrawParams = new DecoderCustomTypes.Withdrawal[](1);
-        withdrawParams[0].staker = address(boringVault);
+        withdrawParams[0].staker = address(oriusVault);
         withdrawParams[0].delegatedTo = address(0);
-        withdrawParams[0].withdrawer = address(boringVault);
+        withdrawParams[0].withdrawer = address(oriusVault);
         withdrawParams[0].nonce = 0;
         withdrawParams[0].startBlock = withdrawRequestBlock;
         withdrawParams[0].strategies = new address[](1);
@@ -347,7 +347,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testDelegation() external {
-        deal(getAddress(sourceChain, "METH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "METH"), address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         _addLeafsForEigenLayerLST(
@@ -383,7 +383,7 @@ contract EigenLayerLSTStakingIntegrationTest is Test, MerkleTreeHelper {
             signatureWithExpiry,
             bytes32(0)
         );
-        targetData[1] = abi.encodeWithSignature("undelegate(address)", boringVault);
+        targetData[1] = abi.encodeWithSignature("undelegate(address)", oriusVault);
         address[] memory decodersAndSanitizers = new address[](2);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
         decodersAndSanitizers[1] = rawDataDecoderAndSanitizer;

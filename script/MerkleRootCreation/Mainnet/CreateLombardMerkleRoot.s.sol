@@ -14,7 +14,7 @@ import "forge-std/Script.sol";
 contract CreateLombardMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x5401b8620E5FB570064CA9114fd1e135fd77D57c;
+    address public oriusVault = 0x5401b8620E5FB570064CA9114fd1e135fd77D57c;
     address public rawDataDecoderAndSanitizer = 0x1060E9391dfdba7F1F24D142eFE71544F590d33F;
     address public managerAddress = 0xcf38e37872748E3b66741A42560672A6cef75e9B;
     address public accountantAddress = 0x28634D0c5edC67CF2450E74deA49B90a4FF93dCE;
@@ -32,7 +32,7 @@ contract CreateLombardMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateLombardStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
@@ -114,7 +114,7 @@ contract CreateLombardMerkleRootScript is Script, MerkleTreeHelper {
         // ========================== Convex ==========================
         // _addConvexLeafs(leafs, getERC20(sourceChain, "lBTC_wBTC_Curve_Pool"), CONVEX_REWARDS_CONTRACT);
 
-        // ========================== BoringVaults ==========================
+        // ========================== OriusVaults ==========================
         {
             ERC20[] memory tellerAssets = new ERC20[](3);
             tellerAssets[0] = getERC20(sourceChain, "WBTC");

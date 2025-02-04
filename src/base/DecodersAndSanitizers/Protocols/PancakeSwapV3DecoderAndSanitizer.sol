@@ -5,7 +5,7 @@ import {UniswapV3DecoderAndSanitizer} from "src/base/DecodersAndSanitizers/Proto
 import {BaseDecoderAndSanitizer, DecoderCustomTypes} from "src/base/DecodersAndSanitizers/BaseDecoderAndSanitizer.sol";
 import {PancakeSwapV3MasterChef} from "src/interfaces/RawDataDecoderAndSanitizerInterfaces.sol";
 
-/// @notice When positions are staked in Masterchef, they can be managed, as if they were being held in the BoringVault.
+/// @notice When positions are staked in Masterchef, they can be managed, as if they were being held in the OriusVault.
 /// To support this, we just need the merkle tree to specify the masterchef contract instead of the position manager.
 /// This also harvests rewards.
 abstract contract PancakeSwapV3DecoderAndSanitizer is UniswapV3DecoderAndSanitizer {
@@ -48,9 +48,9 @@ abstract contract PancakeSwapV3DecoderAndSanitizer is UniswapV3DecoderAndSanitiz
     {
         // Sanitize raw data
         address owner = uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId);
-        if (owner != boringVault) {
+        if (owner != oriusVault) {
             (,,,,,, address stakedUser,,) = pancakeSwapV3MasterChef.userPositionInfos(params.tokenId);
-            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != boringVault) {
+            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != oriusVault) {
                 revert UniswapV3DecoderAndSanitizer__BadTokenId();
             }
         }
@@ -71,9 +71,9 @@ abstract contract PancakeSwapV3DecoderAndSanitizer is UniswapV3DecoderAndSanitiz
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
         address owner = uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId);
-        if (owner != boringVault) {
+        if (owner != oriusVault) {
             (,,,,,, address stakedUser,,) = pancakeSwapV3MasterChef.userPositionInfos(params.tokenId);
-            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != boringVault) {
+            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != oriusVault) {
                 revert UniswapV3DecoderAndSanitizer__BadTokenId();
             }
         }
@@ -92,9 +92,9 @@ abstract contract PancakeSwapV3DecoderAndSanitizer is UniswapV3DecoderAndSanitiz
         // NOTE ownerOf check is done in PositionManager contract as well, but it is added here
         // just for completeness.
         address owner = uniswapV3NonFungiblePositionManager.ownerOf(params.tokenId);
-        if (owner != boringVault) {
+        if (owner != oriusVault) {
             (,,,,,, address stakedUser,,) = pancakeSwapV3MasterChef.userPositionInfos(params.tokenId);
-            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != boringVault) {
+            if (owner != address(pancakeSwapV3MasterChef) || stakedUser != oriusVault) {
                 revert UniswapV3DecoderAndSanitizer__BadTokenId();
             }
         }

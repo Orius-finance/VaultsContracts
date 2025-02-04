@@ -6,12 +6,12 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {EtherFiLiquid1} from "src/interfaces/EtherFiLiquid1.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 
 contract CellarMigrationAdaptor {
     using SafeTransferLib for ERC20;
-    using SafeTransferLib for BoringVault;
+    using SafeTransferLib for OriusVault;
     using FixedPointMathLib for uint256;
 
     /**
@@ -29,12 +29,12 @@ contract CellarMigrationAdaptor {
      */
     error CellarMigrationAdaptor__UserWithdrawsNotAllowed();
 
-    BoringVault internal immutable boringVault;
+    OriusVault internal immutable oriusVault;
     AccountantWithRateProviders internal immutable accountant;
     TellerWithMultiAssetSupport internal immutable teller;
 
-    constructor(address _boringVault, address _accountant, address _teller) {
-        boringVault = BoringVault(payable(_boringVault));
+    constructor(address _oriusVault, address _accountant, address _teller) {
+        oriusVault = OriusVault(payable(_oriusVault));
         accountant = AccountantWithRateProviders(_accountant);
         teller = TellerWithMultiAssetSupport(payable(_teller));
     }
@@ -80,11 +80,11 @@ contract CellarMigrationAdaptor {
 
         uint256 rate = accountant.getRate();
 
-        // We need to divide assets by rate, since Cellar is requesting assets in terms of Base, not the BoringVault Share.
+        // We need to divide assets by rate, since Cellar is requesting assets in terms of Base, not the OriusVault Share.
         assets = assets.mulDivDown(10 ** accountant.decimals(), rate);
 
         // Transfer shares to user.
-        boringVault.safeTransfer(receiver, assets);
+        oriusVault.safeTransfer(receiver, assets);
     }
 
     /**
@@ -93,7 +93,7 @@ contract CellarMigrationAdaptor {
      */
     function balanceOf(bytes memory) public view virtual returns (uint256) {
         uint256 rate = accountant.getRate();
-        uint256 assets = boringVault.balanceOf(msg.sender).mulDivDown(rate, 10 ** accountant.decimals());
+        uint256 assets = oriusVault.balanceOf(msg.sender).mulDivDown(rate, 10 ** accountant.decimals());
         return assets;
     }
 
@@ -107,7 +107,7 @@ contract CellarMigrationAdaptor {
         bool isLiquid = abi.decode(configurationData, (bool));
         if (isLiquid) {
             uint256 rate = accountant.getRate();
-            uint256 withdrawable = boringVault.balanceOf(msg.sender).mulDivDown(rate, 10 ** accountant.decimals());
+            uint256 withdrawable = oriusVault.balanceOf(msg.sender).mulDivDown(rate, 10 ** accountant.decimals());
             return withdrawable;
         } else {
             return 0;
@@ -146,9 +146,9 @@ contract CellarMigrationAdaptor {
      */
     function deposit(ERC20 depositAsset, uint256 depositAmount, uint256 minimumMint) external {
         depositAmount = _maxAvailable(depositAsset, depositAmount);
-        depositAsset.safeApprove(address(boringVault), depositAmount);
+        depositAsset.safeApprove(address(oriusVault), depositAmount);
         teller.bulkDeposit(depositAsset, depositAmount, minimumMint, address(this));
-        _revokeExternalApproval(depositAsset, address(boringVault));
+        _revokeExternalApproval(depositAsset, address(oriusVault));
     }
 
     /**

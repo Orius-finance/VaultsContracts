@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {PositionManager as EigenLayerPositionManager} from "src/interfaces/EigenLayerPositionManager.sol";
 import {Test, stdStorage, StdStorage, stdError, console} from "@forge-std/Test.sol";
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
@@ -10,7 +10,7 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 contract ITBEigenLayerPositionManagerTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault = BoringVault(payable(0x7985F7dAdb0Cd22e9Cc24A5f5e284f3FA939D88f));
+    OriusVault public oriusVault = OriusVault(payable(0x7985F7dAdb0Cd22e9Cc24A5f5e284f3FA939D88f));
     EigenLayerPositionManager public eigenLayerPositionManager =
         EigenLayerPositionManager(payable(0xc31BDE60f00bf1172a59B8EB699c417548Bce0C2));
     ERC20 internal METH;
@@ -30,7 +30,7 @@ contract ITBEigenLayerPositionManagerTest is Test, MerkleTreeHelper {
         // Give position manager some mETH to stake.
         deal(address(METH), address(eigenLayerPositionManager), 1_000e18);
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
 
         eigenLayerPositionManager.approveToken(address(METH), getAddress(sourceChain, "strategyManager"), 1_000e18);
         eigenLayerPositionManager.deposit(1_000e18, 0);
@@ -73,7 +73,7 @@ contract ITBEigenLayerPositionManagerTest is Test, MerkleTreeHelper {
 
         vm.stopPrank();
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
 
         // Change Delegation.
         eigenLayerPositionManager.delegate();

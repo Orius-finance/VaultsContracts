@@ -18,9 +18,9 @@ contract DeployCbBtcDefiVaultScript is DeployArcticArchitecture, MainnetAddresse
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "cbBTC DeFi Vault";
-    string public boringVaultSymbol = "cbBTCv";
-    uint8 public boringVaultDecimals = 8;
+    string public oriusVaultName = "cbBTC DeFi Vault";
+    string public oriusVaultSymbol = "cbBTCv";
+    uint8 public oriusVaultDecimals = 8;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployCbBtcDefiVaultScript is DeployArcticArchitecture, MainnetAddresse
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = CbBtcDefiVaultRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = CbBtcDefiVaultName;
+        names .oriusVault = CbBtcDefiVaultName;
         names.manager = CbBtcDefiVaultManagerName;
         names.accountant = CbBtcDefiVaultAccountantName;
         names.teller = CbBtcDefiVaultTellerName;
@@ -70,7 +70,7 @@ contract DeployCbBtcDefiVaultScript is DeployArcticArchitecture, MainnetAddresse
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(cbBtcDefiVaultDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         depositAssets.push(
@@ -135,9 +135,9 @@ contract DeployCbBtcDefiVaultScript is DeployArcticArchitecture, MainnetAddresse
         _deploy(
             "Mainnet/cbBtcDefiVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

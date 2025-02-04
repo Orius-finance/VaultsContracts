@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -35,7 +35,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -43,7 +43,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     ERC20 internal USDC;
@@ -66,32 +66,32 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
         vault = getAddress(sourceChain, "vault");
         uniswapV3NonFungiblePositionManager = getAddress(sourceChain, "uniswapV3NonFungiblePositionManager");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        manager = new ManagerWithMerkleVerification(address(this), address(boringVault), vault);
+        manager = new ManagerWithMerkleVerification(address(this), address(oriusVault), vault);
 
         rawDataDecoderAndSanitizer =
-            address(new EtherFiLiquidDecoderAndSanitizer(address(boringVault), uniswapV3NonFungiblePositionManager));
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+            address(new EtherFiLiquidDecoderAndSanitizer(address(oriusVault), uniswapV3NonFungiblePositionManager));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -112,7 +112,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -123,11 +123,11 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(vault, BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testManagerMerkleVerificationHappyPath() external {
@@ -161,7 +161,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
 
         uint256[] memory values = new uint256[](2);
 
-        deal(address(USDT), address(boringVault), 777);
+        deal(address(USDT), address(oriusVault), 777);
 
         address[] memory decodersAndSanitizers = new address[](2);
         decodersAndSanitizers[0] = rawDataDecoderAndSanitizer;
@@ -171,8 +171,8 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
         console.log("Gas used", gas - gasleft());
 
-        assertEq(USDC.allowance(address(boringVault), usdcSpender), 777, "USDC should have an allowance");
-        assertEq(USDT.allowance(address(boringVault), usdtTo), 777, "USDT should have have an allowance");
+        assertEq(USDC.allowance(address(oriusVault), usdcSpender), 777, "USDC should have an allowance");
+        assertEq(USDT.allowance(address(oriusVault), usdtTo), 777, "USDT should have have an allowance");
     }
 
     function testReverts() external {
@@ -244,7 +244,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                ManagerWithMerkleVerification.ManagerWithMerkleVerification__OnlyCallableByBoringVault.selector
+                ManagerWithMerkleVerification.ManagerWithMerkleVerification__OnlyCallableByOriusVault.selector
             )
         );
         manager.flashLoan(address(this), tokens, amounts, abi.encode(0));
@@ -274,7 +274,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
     }
 
     function testPlatformMintingSharesRevert() external {
-        deal(address(boringVault), 1_000e18);
+        deal(address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         leafs[0] =
@@ -312,7 +312,7 @@ contract ManagerWithMerkleVerificationTest is Test, MerkleTreeHelper {
     // ========================================= HELPER FUNCTIONS =========================================
 
     function withdraw(uint256 amount) external {
-        boringVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
+        oriusVault.enter(address(0), ERC20(address(0)), 0, address(this), amount);
     }
 
     function _startFork(string memory rpcKey, uint256 blockNumber) internal returns (uint256 forkId) {

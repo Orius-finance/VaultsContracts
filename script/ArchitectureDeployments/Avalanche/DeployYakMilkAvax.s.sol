@@ -19,9 +19,9 @@ contract DeployYakMilkAvaxScript is DeployArcticArchitecture, AvalancheAddresses
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Yak Milk AVAX";
-    string public boringVaultSymbol = "AVAXMILK";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Yak Milk AVAX";
+    string public oriusVaultSymbol = "AVAXMILK";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -48,7 +48,7 @@ contract DeployYakMilkAvaxScript is DeployArcticArchitecture, AvalancheAddresses
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = YakMilkAvaxVaultRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = YakMilkAvaxVaultName;
+        names .oriusVault = YakMilkAvaxVaultName;
         names.manager = YakMilkAvaxVaultManagerName;
         names.accountant = YakMilkAvaxVaultAccountantName;
         names.teller = YakMilkAvaxVaultTellerName;
@@ -71,7 +71,7 @@ contract DeployYakMilkAvaxScript is DeployArcticArchitecture, AvalancheAddresses
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiLiquidEthDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         // none
@@ -89,9 +89,9 @@ contract DeployYakMilkAvaxScript is DeployArcticArchitecture, AvalancheAddresses
         _deploy(
             "YakMilkAvaxDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

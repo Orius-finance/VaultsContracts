@@ -18,9 +18,9 @@ contract DeploySymbioticLRTVaultScript is DeployArcticArchitecture, MainnetAddre
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Super Symbiotic LRT";
-    string public boringVaultSymbol = "weETHs";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Super Symbiotic LRT";
+    string public oriusVaultSymbol = "weETHs";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev1Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeploySymbioticLRTVaultScript is DeployArcticArchitecture, MainnetAddre
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = SymbioticLRTVaultRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = SymbioticLRTVaultName;
+        names .oriusVault = SymbioticLRTVaultName;
         names.manager = SymbioticLRTVaultManagerName;
         names.accountant = SymbioticLRTVaultAccountantName;
         names.teller = SymbioticLRTVaultTellerName;
@@ -70,7 +70,7 @@ contract DeploySymbioticLRTVaultScript is DeployArcticArchitecture, MainnetAddre
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(SymbioticLRTDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         uint256 amount = 1e18;
@@ -319,9 +319,9 @@ contract DeploySymbioticLRTVaultScript is DeployArcticArchitecture, MainnetAddre
         _deploy(
             "SymbioticLRTVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

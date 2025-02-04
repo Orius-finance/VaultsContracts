@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {DeployArcticArchitecture, ERC20, Deployer} from "script/ArchitectureDeployments/DeployArcticArchitecture.sol";
-import {BoringGovernance} from "src/base/Governance/BoringGovernance.sol";
+import {OriusGovernance} from "src/base/Governance/OriusGovernance.sol";
 import {AddressToBytes32Lib} from "src/helper/AddressToBytes32Lib.sol";
 import {ArbitrumAddresses} from "test/resources/ArbitrumAddresses.sol";
 import {OnlyKarakDecoderAndSanitizer} from "src/base/DecodersAndSanitizers/OnlyKarakDecoderAndSanitizer.sol";
@@ -20,9 +20,9 @@ contract DeployETHFIStakingScript is DeployArcticArchitecture, ArbitrumAddresses
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Staked ETHFI";
-    string public boringVaultSymbol = "sETHFI";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Staked ETHFI";
+    string public oriusVaultSymbol = "sETHFI";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -43,8 +43,8 @@ contract DeployETHFIStakingScript is DeployArcticArchitecture, ArbitrumAddresses
         configureDeployment.balancerVault = balancerVault;
         configureDeployment.WETH = address(WETH);
 
-        // Set boringCreationCode so we deploy BoringGovernance.
-        boringCreationCode = type(BoringGovernance).creationCode;
+        // Set oriusCreationCode so we deploy OriusGovernance.
+        oriusCreationCode = type(OriusGovernance).creationCode;
 
         // Save deployer.
         deployer = Deployer(configureDeployment.deployerAddress);
@@ -52,7 +52,7 @@ contract DeployETHFIStakingScript is DeployArcticArchitecture, ArbitrumAddresses
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = StakedETHFIRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = StakedETHFIName;
+        names .oriusVault = StakedETHFIName;
         names.manager = StakedETHFIManagerName;
         names.accountant = StakedETHFIAccountantName;
         names.teller = StakedETHFITellerName;
@@ -74,7 +74,7 @@ contract DeployETHFIStakingScript is DeployArcticArchitecture, ArbitrumAddresses
 
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(OnlyKarakDecoderAndSanitizer).creationCode;
-        bytes memory constructorArgs = abi.encode(deployer.getAddress(names.boringVault));
+        bytes memory constructorArgs = abi.encode(deployer.getAddress(names .oriusVault));
 
         // Setup withdraw assets.
         withdrawAssets.push(
@@ -97,9 +97,9 @@ contract DeployETHFIStakingScript is DeployArcticArchitecture, ArbitrumAddresses
         _deploy(
             "Arbitrum/StakedETHFIDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

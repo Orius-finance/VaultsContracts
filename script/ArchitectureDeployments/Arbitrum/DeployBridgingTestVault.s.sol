@@ -19,9 +19,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ArbitrumAddr
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Bridging Test Vault";
-    string public boringVaultSymbol = "BTEV";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Bridging Test Vault";
+    string public oriusVaultSymbol = "BTEV";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -48,7 +48,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ArbitrumAddr
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = BridgingTestVaultEthRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = BridgingTestVaultEthName;
+        names .oriusVault = BridgingTestVaultEthName;
         names.manager = BridgingTestVaultEthManagerName;
         names.accountant = BridgingTestVaultEthAccountantName;
         names.teller = BridgingTestVaultEthTellerName;
@@ -71,7 +71,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ArbitrumAddr
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiLiquidEthDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         // none
@@ -97,9 +97,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ArbitrumAddr
         _deploy(
             "ArbitrumBridgingTestVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

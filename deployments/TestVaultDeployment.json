@@ -11,7 +11,7 @@
   "assetConfiguration": "",
   "core": {
     "AccountantWithRateProviders": "0xE4100F1Cf42C7CD6E5Cac69002eeD2F1c6d68704",
-    "BoringVault": "0xf2b27554d618488f28023467d3F9656c472ea22e",
+    "OriusVault": "0xf2b27554d618488f28023467d3F9656c472ea22e",
     "DecoderAndSanitizer": "0xF87F3Cf3b1bC0673e037c41b275B4300e1eCF739",
     "Lens": "0x5232bc0F5999f8dA604c42E1748A13a170F94A1B",
     "ManagerWithMerkleVerification": "0x4180D80018055158cf608A7A7Eb5582C7a0135E8",

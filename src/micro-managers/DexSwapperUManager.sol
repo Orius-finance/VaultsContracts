@@ -68,11 +68,11 @@ contract DexSwapperUManager is UManager {
     constructor(
         address _owner,
         address _manager,
-        address _boringVault,
+        address _oriusVault,
         address _router,
         address _balancerVault,
         address _priceRouter
-    ) UManager(_owner, _manager, _boringVault) {
+    ) UManager(_owner, _manager, _oriusVault) {
         router = IUniswapV3Router(_router);
         balancerVault = BalancerVault(_balancerVault);
         priceRouter = PriceRouter(_priceRouter);
@@ -129,7 +129,7 @@ contract DexSwapperUManager is UManager {
             }
             IUniswapV3Router.ExactInputParams memory params = IUniswapV3Router.ExactInputParams({
                 path: packedPath,
-                recipient: boringVault,
+                recipient: oriusVault,
                 deadline: deadline,
                 amountIn: amountIn,
                 amountOutMinimum: amountOutMinimum
@@ -140,12 +140,12 @@ contract DexSwapperUManager is UManager {
         }
 
         ERC20 tokenOut = path[path.length - 1];
-        uint256 tokenOutBalanceDelta = tokenOut.balanceOf(boringVault);
+        uint256 tokenOutBalanceDelta = tokenOut.balanceOf(oriusVault);
 
         // Make the manage call.
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        tokenOutBalanceDelta = tokenOut.balanceOf(boringVault) - tokenOutBalanceDelta;
+        tokenOutBalanceDelta = tokenOut.balanceOf(oriusVault) - tokenOutBalanceDelta;
 
         uint256 tokenOutQuotedInTokenIn = priceRouter.getValue(tokenOut, tokenOutBalanceDelta, path[0]);
 
@@ -154,7 +154,7 @@ contract DexSwapperUManager is UManager {
         }
 
         // Check that full allowance was used, if not reuse the first proof and revoke it.
-        if (path[0].allowance(boringVault, address(router)) > 0) {
+        if (path[0].allowance(oriusVault, address(router)) > 0) {
             bytes32[][] memory revokeApproveProof = new bytes32[][](1);
             revokeApproveProof[0] = manageProofs[0];
             address[] memory revokeApproveDecodersAndSanitizers = new address[](1);
@@ -205,17 +205,17 @@ contract DexSwapperUManager is UManager {
 
         uint256 tokenInDelta = singleSwap.kind == DecoderCustomTypes.SwapKind.GIVEN_IN
             ? singleSwap.amount
-            : ERC20(singleSwap.assetIn).balanceOf(boringVault);
+            : ERC20(singleSwap.assetIn).balanceOf(oriusVault);
         uint256 tokenOutDelta = singleSwap.kind == DecoderCustomTypes.SwapKind.GIVEN_OUT
             ? singleSwap.amount
-            : ERC20(singleSwap.assetOut).balanceOf(boringVault);
+            : ERC20(singleSwap.assetOut).balanceOf(oriusVault);
 
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         if (singleSwap.kind == DecoderCustomTypes.SwapKind.GIVEN_IN) {
-            tokenOutDelta = ERC20(singleSwap.assetOut).balanceOf(boringVault) - tokenOutDelta;
+            tokenOutDelta = ERC20(singleSwap.assetOut).balanceOf(oriusVault) - tokenOutDelta;
         } else {
-            tokenInDelta = tokenInDelta - ERC20(singleSwap.assetIn).balanceOf(boringVault);
+            tokenInDelta = tokenInDelta - ERC20(singleSwap.assetIn).balanceOf(oriusVault);
         }
 
         uint256 tokenOutQuotedInTokenIn =
@@ -226,7 +226,7 @@ contract DexSwapperUManager is UManager {
         }
 
         // Check that full allowance was used, if not reuse the first proof and revoke it.
-        if (ERC20(singleSwap.assetIn).allowance(boringVault, address(balancerVault)) > 0) {
+        if (ERC20(singleSwap.assetIn).allowance(oriusVault, address(balancerVault)) > 0) {
             bytes32[][] memory revokeApproveProof = new bytes32[][](1);
             revokeApproveProof[0] = manageProofs[0];
             address[] memory revokeApproveDecodersAndSanitizers = new address[](1);
@@ -276,11 +276,11 @@ contract DexSwapperUManager is UManager {
         targetData[1] = abi.encodeWithSelector(info.selector, i, j, dx, min_dy);
         // values[0] = 0;
 
-        uint256 tokenOutDelta = info.assetOut.balanceOf(boringVault);
+        uint256 tokenOutDelta = info.assetOut.balanceOf(oriusVault);
 
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
-        tokenOutDelta = info.assetOut.balanceOf(boringVault) - tokenOutDelta;
+        tokenOutDelta = info.assetOut.balanceOf(oriusVault) - tokenOutDelta;
 
         uint256 tokenOutQuotedInTokenIn = priceRouter.getValue(info.assetOut, tokenOutDelta, info.assetIn);
 
@@ -289,7 +289,7 @@ contract DexSwapperUManager is UManager {
         }
 
         // Check that full allowance was used, if not reuse the first proof and revoke it.
-        if (info.assetIn.allowance(boringVault, info.pool) > 0) {
+        if (info.assetIn.allowance(oriusVault, info.pool) > 0) {
             bytes32[][] memory revokeApproveProof = new bytes32[][](1);
             revokeApproveProof[0] = manageProofs[0];
             address[] memory revokeApproveDecodersAndSanitizers = new address[](1);

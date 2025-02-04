@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
     using AddressToBytes32Lib for address;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -44,31 +44,31 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -89,7 +89,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -100,16 +100,16 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testBridgingToBaseERC20() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 101e18);
-        deal(getAddress(sourceChain, "boringVault"), 101e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 101e18);
+        deal(getAddress(sourceChain, "oriusVault"), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         _addLayerZeroLeafs(
@@ -136,7 +136,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
         );
         DecoderCustomTypes.SendParam memory param;
         param.dstEid = layerZeroBaseEndpointId;
-        param.to = address(boringVault).toBytes32();
+        param.to = address(oriusVault).toBytes32();
         param.amountLD = 100e18;
         param.minAmountLD = 99e18;
         param.extraOptions = hex"0003";
@@ -151,7 +151,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
             "send((uint32,bytes32,uint256,uint256,bytes,bytes,bytes),(uint256,uint256),address)",
             param,
             fee,
-            boringVault
+            oriusVault
         );
         uint256[] memory values = new uint256[](2);
         values[1] = fee.nativeFee;
@@ -163,8 +163,8 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
     }
 
     function testBridgingToBaseERC20Reverts() external {
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 101e18);
-        deal(getAddress(sourceChain, "boringVault"), 101e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 101e18);
+        deal(getAddress(sourceChain, "oriusVault"), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         _addLayerZeroLeafs(
@@ -191,7 +191,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
         );
         DecoderCustomTypes.SendParam memory param;
         param.dstEid = layerZeroBaseEndpointId;
-        param.to = address(boringVault).toBytes32();
+        param.to = address(oriusVault).toBytes32();
         param.amountLD = 100e18;
         param.minAmountLD = 99e18;
         param.extraOptions = hex"0003";
@@ -206,7 +206,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
             "send((uint32,bytes32,uint256,uint256,bytes,bytes,bytes),(uint256,uint256),address)",
             param,
             fee,
-            boringVault
+            oriusVault
         );
         uint256[] memory values = new uint256[](2);
         values[1] = fee.nativeFee;
@@ -226,7 +226,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
             "send((uint32,bytes32,uint256,uint256,bytes,bytes,bytes),(uint256,uint256),address)",
             param,
             fee,
-            boringVault
+            oriusVault
         );
 
         vm.expectRevert(
@@ -239,7 +239,7 @@ contract OFTBridgeIntegrationTest is Test, MerkleTreeHelper {
             "send((uint32,bytes32,uint256,uint256,bytes,bytes,bytes),(uint256,uint256),address)",
             param,
             fee,
-            boringVault
+            oriusVault
         );
 
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);

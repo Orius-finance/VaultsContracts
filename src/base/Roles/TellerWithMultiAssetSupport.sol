@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -153,9 +153,9 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     //============================== IMMUTABLES ===============================
 
     /**
-     * @notice The BoringVault this contract is working with.
+     * @notice The OriusVault this contract is working with.
      */
-    BoringVault public immutable vault;
+    OriusVault public immutable vault;
 
     /**
      * @notice The AccountantWithRateProviders this contract is working with.
@@ -163,7 +163,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     AccountantWithRateProviders public immutable accountant;
 
     /**
-     * @notice One share of the BoringVault.
+     * @notice One share of the OriusVault.
      */
     uint256 internal immutable ONE_SHARE;
 
@@ -175,7 +175,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     constructor(address _owner, address _vault, address _accountant, address _weth)
         Auth(_owner, Authority(address(0)))
     {
-        vault = BoringVault(payable(_vault));
+        vault = OriusVault(payable(_vault));
         ONE_SHARE = 10 ** vault.decimals();
         accountant = AccountantWithRateProviders(_accountant);
         nativeWrapper = WETH(payable(_weth));
@@ -328,7 +328,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     /**
      * @notice Allows DEPOSIT_REFUNDER_ROLE to revert a pending deposit.
      * @dev Once a deposit share lock period has passed, it can no longer be reverted.
-     * @dev It is possible the admin does not setup the BoringVault to call the transfer hook,
+     * @dev It is possible the admin does not setup the OriusVault to call the transfer hook,
      *      but this contract can still be saving share lock state. In the event this happens
      *      deposits are still refundable if the user has not transferred their shares.
      *      But there is no guarantee that the user has not transferred their shares.
@@ -368,7 +368,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     // ========================================= USER FUNCTIONS =========================================
 
     /**
-     * @notice Allows users to deposit into the BoringVault, if this contract is not paused.
+     * @notice Allows users to deposit into the OriusVault, if this contract is not paused.
      * @dev Publicly callable.
      */
     function deposit(ERC20 depositAsset, uint256 depositAmount, uint256 minimumMint)
@@ -401,7 +401,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     }
 
     /**
-     * @notice Allows users to deposit into BoringVault using permit.
+     * @notice Allows users to deposit into OriusVault using permit.
      * @dev Publicly callable.
      */
     function depositWithPermit(
@@ -461,7 +461,7 @@ contract TellerWithMultiAssetSupport is Auth, BeforeTransferHook, ReentrancyGuar
     // ========================================= INTERNAL HELPER FUNCTIONS =========================================
 
     /**
-     * @notice Implements a common ERC20 deposit into BoringVault.
+     * @notice Implements a common ERC20 deposit into OriusVault.
      */
     function _erc20Deposit(
         ERC20 depositAsset,

@@ -40,7 +40,7 @@ contract AtomicSolverV3 is IAtomicSolver, Auth {
     error AtomicSolverV3___FailedToSolve();
     error AtomicSolverV3___SolveMaxAssetsExceeded(uint256 actualAssets, uint256 maxAssets);
     error AtomicSolverV3___P2PSolveMinSharesNotMet(uint256 actualShares, uint256 minShares);
-    error AtomicSolverV3___BoringVaultTellerMismatch(address vault, address teller);
+    error AtomicSolverV3___OriusVaultTellerMismatch(address vault, address teller);
 
     //============================== IMMUTABLES ===============================
 
@@ -166,7 +166,7 @@ contract AtomicSolverV3 is IAtomicSolver, Auth {
             abi.decode(runData, (SolveType, address, uint256, uint256, TellerWithMultiAssetSupport));
 
         if (address(offer) != address(teller.vault())) {
-            revert AtomicSolverV3___BoringVaultTellerMismatch(address(offer), address(teller));
+            revert AtomicSolverV3___OriusVaultTellerMismatch(address(offer), address(teller));
         }
         // Make sure solvers `maxAssets` was not exceeded.
         if (wantApprovalAmount > maxAssets) {

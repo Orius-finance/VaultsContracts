@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -23,7 +23,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -31,7 +31,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     address public weEthOracle = 0x3fa58b74e9a8eA8768eb33c8453e9C2Ed089A40a;
@@ -46,11 +46,11 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         // uint256 blockNumber = 19369928;
         uint256 blockNumber = 19826676;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 100e18);
-        deal(address(boringVault), 1e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 100e18);
+        deal(address(oriusVault), 1e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -80,7 +80,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -97,7 +97,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -118,7 +118,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -134,11 +134,11 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         // uint256 blockNumber = 19369928;
         uint256 blockNumber = 19826676;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 100e18);
-        deal(address(boringVault), 1e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 100e18);
+        deal(address(oriusVault), 1e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -168,8 +168,8 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -185,8 +185,8 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -207,8 +207,8 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[1] = abi.encodeWithSignature(
             "outboundTransferCustomRefund(address,address,address,uint256,uint256,uint256,bytes)",
             getAddress(sourceChain, "WEETH"),
-            address(boringVault),
-            address(boringVault),
+            address(oriusVault),
+            address(oriusVault),
             100e18,
             125062,
             60000000,
@@ -225,10 +225,10 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         // uint256 blockNumber = 19369928;
         uint256 blockNumber = 19826676;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 100e18);
+        deal(address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         leafs[0] = ManageLeaf(
@@ -267,7 +267,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "MAINNET_RPC_URL";
         uint256 blockNumber = 20191506;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
         // For this test we will claim on behalf of another user so that we do not need to replicate complicated state setup to simulate a bridge from Arbitrum to Ethereum.
@@ -339,13 +339,13 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "MAINNET_RPC_URL";
         uint256 blockNumber = 20188705;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
         // For this test we will claim on behalf of another user so that we do not need to replicate complicated state setup to simulate a bridge from Arbitrum to Ethereum.
         address userToClaimFor = 0x8c140cbc0Fb9CcCDf698e0BeEc4faCA128d9d9E9;
-        // To accomplish this using MerkleTreeHelper we need to override the boringVault address to be the users.
-        setAddress(true, sourceChain, "boringVault", userToClaimFor);
+        // To accomplish this using MerkleTreeHelper we need to override the oriusVault address to be the users.
+        setAddress(true, sourceChain, "oriusVault", userToClaimFor);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -416,10 +416,10 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "ARBITRUM_RPC_URL";
         uint256 blockNumber = 228366826;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress(sourceChain, "WEETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WEETH"), address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -443,7 +443,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[0] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,bytes)",
             getAddress(mainnet, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             hex""
         );
@@ -455,7 +455,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[0] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,bytes)",
             getAddress(mainnet, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             hex"01"
         );
@@ -473,7 +473,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targetData[0] = abi.encodeWithSignature(
             "outboundTransfer(address,address,uint256,bytes)",
             getAddress(mainnet, "WEETH"),
-            address(boringVault),
+            address(oriusVault),
             100e18,
             hex""
         );
@@ -488,10 +488,10 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "ARBITRUM_RPC_URL";
         uint256 blockNumber = 228366826;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 100e18);
+        deal(address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -512,7 +512,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targets[0] = getAddress(sourceChain, "arbitrumSys");
 
         bytes[] memory targetData = new bytes[](1);
-        targetData[0] = abi.encodeWithSignature("withdrawEth(address)", address(boringVault));
+        targetData[0] = abi.encodeWithSignature("withdrawEth(address)", address(oriusVault));
         uint256[] memory values = new uint256[](1);
         values[0] = 100e18;
         address[] memory decodersAndSanitizers = new address[](1);
@@ -529,10 +529,10 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         string memory rpcKey = "ARBITRUM_RPC_URL";
         uint256 blockNumber = 226704376;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 100e18);
+        deal(address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -571,11 +571,11 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         // uint256 blockNumber = 19369928;
         uint256 blockNumber = 19826676;
         _createForkAndSetup(rpcKey, blockNumber);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(getAddress(sourceChain, "WEETH")), address(boringVault), 100e18);
-        deal(address(boringVault), 1_000e18);
+        deal(address(getAddress(sourceChain, "WEETH")), address(oriusVault), 100e18);
+        deal(address(oriusVault), 1_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](16);
         ERC20[] memory bridgeAssets = new ERC20[](1);
@@ -597,11 +597,11 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         targets[1] = getAddress(sourceChain, "arbitrumDelayedInbox");
 
         bytes[] memory targetData = new bytes[](2);
-        address to = address(boringVault);
+        address to = address(oriusVault);
         uint256 l2CallValue = 0.1e18;
         uint256 maxSubmissionCost = 0.05e18;
-        address excessFeeRefundAddress = address(boringVault);
-        address callValueRefundAddress = address(boringVault);
+        address excessFeeRefundAddress = address(oriusVault);
+        address callValueRefundAddress = address(oriusVault);
         uint256 gasLimit = 25_000;
         uint256 maxFeePerGas = 0.01e9;
         bytes memory data = hex"";
@@ -685,27 +685,27 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
     function _createForkAndSetup(string memory rpcKey, uint256 blockNumber) internal {
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(oriusVault)));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -726,7 +726,7 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -737,11 +737,11 @@ contract ArbitrumNativeBridgeIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function _startFork(string memory rpcKey, uint256 blockNumber) internal returns (uint256 forkId) {

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -26,7 +26,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
     PriceRouter public priceRouter = PriceRouter(0xAB2d48358D41980eee1cb93764f45148F6818964);
@@ -36,7 +36,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -45,31 +45,31 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
         uint256 blockNumber = 19512443;
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        manager = new ManagerWithMerkleVerification(address(this), address(boringVault), vault);
+        manager = new ManagerWithMerkleVerification(address(this), address(oriusVault), vault);
 
         rawDataDecoderAndSanitizer =
-            address(new EtherFiLiquidDecoderAndSanitizer(address(boringVault), uniswapV3NonFungiblePositionManager));
+            address(new EtherFiLiquidDecoderAndSanitizer(address(oriusVault), uniswapV3NonFungiblePositionManager));
 
         dexSwapperUManager = new DexSwapperUManager(
-            address(this), address(manager), address(boringVault), uniV3Router, vault, address(priceRouter)
+            address(this), address(manager), address(oriusVault), uniV3Router, vault, address(priceRouter)
         );
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -90,7 +90,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -102,7 +102,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(vault, BALANCER_VAULT_ROLE, true);
 
         dexSwapperUManager.setPeriod(300);
@@ -110,7 +110,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
     }
 
     function testSwapWithUniswapV3() external {
-        deal(address(WEETH), address(boringVault), 10_000e18);
+        deal(address(WEETH), address(oriusVault), 10_000e18);
         // Make sure the vault can
         // swap weETH -> wETH
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
@@ -120,7 +120,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
             ManageLeaf(uniV3Router, false, "exactInput((bytes,address,uint256,uint256,uint256))", new address[](3));
         leafs[1].argumentAddresses[0] = address(WEETH);
         leafs[1].argumentAddresses[1] = address(WETH);
-        leafs[1].argumentAddresses[2] = address(boringVault);
+        leafs[1].argumentAddresses[2] = address(oriusVault);
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
 
@@ -171,7 +171,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
     function testSwapWithBalancerV2() external {
         dexSwapperUManager.setAllowedSlippage(0.01e4);
 
-        deal(address(WETH), address(boringVault), 100_000e18);
+        deal(address(WETH), address(oriusVault), 100_000e18);
         bytes32 poolId = 0x1e19cf2d73a72ef1332c882f20534b6519be0276000200000000000000000112;
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
@@ -186,8 +186,8 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
         leafs[1].argumentAddresses[0] = address(rETH_wETH);
         leafs[1].argumentAddresses[1] = address(WETH);
         leafs[1].argumentAddresses[2] = address(RETH);
-        leafs[1].argumentAddresses[3] = address(boringVault);
-        leafs[1].argumentAddresses[4] = address(boringVault);
+        leafs[1].argumentAddresses[3] = address(oriusVault);
+        leafs[1].argumentAddresses[4] = address(oriusVault);
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
 
@@ -207,9 +207,9 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
             userData: hex""
         });
         DecoderCustomTypes.FundManagement memory funds = DecoderCustomTypes.FundManagement({
-            sender: address(boringVault),
+            sender: address(oriusVault),
             fromInternalBalance: false,
-            recipient: address(boringVault),
+            recipient: address(oriusVault),
             toInternalBalance: false
         });
 
@@ -231,7 +231,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
 
     function testSwapWithCurve() external {
         dexSwapperUManager.setAllowedSlippage(0.01e4);
-        deal(address(WETH), address(boringVault), 100_000e18);
+        deal(address(WETH), address(oriusVault), 100_000e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](2);
         leafs[0] = ManageLeaf(address(WETH), false, "approve(address,uint256)", new address[](1));
@@ -287,7 +287,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
         // Set allowed swaps per period to zero.
         dexSwapperUManager.setAllowedCallsPerPeriod(0);
 
-        deal(address(WEETH), address(boringVault), 10_000e18);
+        deal(address(WEETH), address(oriusVault), 10_000e18);
         // Make sure the vault can
         // swap weETH -> wETH
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
@@ -297,7 +297,7 @@ contract DexSwapperUManagerTest is Test, MainnetAddresses {
             ManageLeaf(uniV3Router, false, "exactInput((bytes,address,uint256,uint256,uint256))", new address[](3));
         leafs[1].argumentAddresses[0] = address(WEETH);
         leafs[1].argumentAddresses[1] = address(WETH);
-        leafs[1].argumentAddresses[2] = address(boringVault);
+        leafs[1].argumentAddresses[2] = address(oriusVault);
 
         bytes32[][] memory manageTree = _generateMerkleTree(leafs);
 

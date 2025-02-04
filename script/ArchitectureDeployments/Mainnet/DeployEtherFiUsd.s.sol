@@ -18,9 +18,9 @@ contract DeployEtherFiUsdScript is DeployArcticArchitecture, MainnetAddresses {
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "ether.fi USD";
-    string public boringVaultSymbol = "eUSD";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "ether.fi USD";
+    string public oriusVaultSymbol = "eUSD";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -47,7 +47,7 @@ contract DeployEtherFiUsdScript is DeployArcticArchitecture, MainnetAddresses {
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = EtherFiUsdRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = EtherFiUsdName;
+        names .oriusVault = EtherFiUsdName;
         names.manager = EtherFiUsdManagerName;
         names.accountant = EtherFiUsdAccountantName;
         names.teller = EtherFiUsdTellerName;
@@ -70,7 +70,7 @@ contract DeployEtherFiUsdScript is DeployArcticArchitecture, MainnetAddresses {
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiUsdDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         depositAssets.push(
@@ -153,9 +153,9 @@ contract DeployEtherFiUsdScript is DeployArcticArchitecture, MainnetAddresses {
         _deploy(
             "EtherFiUsdDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

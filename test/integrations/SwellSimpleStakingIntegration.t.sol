@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -15,7 +15,7 @@ import {
 import {DecoderCustomTypes} from "src/interfaces/DecoderCustomTypes.sol";
 import {RolesAuthority, Authority} from "@solmate/auth/authorities/RolesAuthority.sol";
 import {DroneLib} from "src/base/Drones/DroneLib.sol";
-import {BoringDrone} from "src/base/Drones/BoringDrone.sol";
+import {OriusDrone} from "src/base/Drones/OriusDrone.sol";
 
 import {MerkleTreeHelper} from "test/resources/MerkleTreeHelper/MerkleTreeHelper.sol";
 
@@ -27,16 +27,16 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
-    BoringDrone public boringDrone;
+    OriusDrone public oriusDrone;
 
     uint8 public constant MANAGER_ROLE = 1;
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -47,35 +47,35 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        boringDrone = new BoringDrone(address(boringVault), 0);
+        oriusDrone = new OriusDrone(address(oriusVault), 0);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new PointFarmingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new PointFarmingDecoderAndSanitizer(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -96,7 +96,7 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -107,12 +107,12 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
     }
 
     function testSwellSimpleStakingIntegration() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 1_000e18);
 
         // approve
         // Call deposit
@@ -144,10 +144,10 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
             "approve(address,uint256)", getAddress(sourceChain, "swellSimpleStaking"), type(uint256).max
         );
         targetData[1] = abi.encodeWithSignature(
-            "deposit(address,uint256,address)", getAddress(sourceChain, "WETH"), 1_000e18, address(boringVault)
+            "deposit(address,uint256,address)", getAddress(sourceChain, "WETH"), 1_000e18, address(oriusVault)
         );
         targetData[2] = abi.encodeWithSignature(
-            "withdraw(address,uint256,address)", getAddress(sourceChain, "WETH"), 1_000e18, address(boringVault)
+            "withdraw(address,uint256,address)", getAddress(sourceChain, "WETH"), 1_000e18, address(oriusVault)
         );
 
         address[] memory decodersAndSanitizers = new address[](3);
@@ -160,24 +160,24 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WETH").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "WETH").balanceOf(address(oriusVault)),
             1_000e18,
-            "BoringVault should have received 1,000 WETH"
+            "OriusVault should have received 1,000 WETH"
         );
     }
 
     function testSwellSimpleStakingIntegrationViaDrone() external {
-        deal(getAddress(sourceChain, "WETH"), address(boringDrone), 1_000e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusDrone), 1_000e18);
 
-        // Before creating merkle leafs, set the boringVault address to be the puppet.
-        setAddress(true, sourceChain, "boringVault", address(boringDrone));
+        // Before creating merkle leafs, set the oriusVault address to be the puppet.
+        setAddress(true, sourceChain, "oriusVault", address(oriusDrone));
         ManageLeaf[] memory leafs = new ManageLeaf[](4);
         _addSwellSimpleStakingLeafs(
             leafs, getAddress(sourceChain, "WETH"), getAddress(sourceChain, "swellSimpleStaking")
         );
 
         // Convert the leafs into puppet leafs.
-        ManageLeaf[] memory puppetLeafs = _createPuppetLeafs(leafs, address(boringDrone));
+        ManageLeaf[] memory puppetLeafs = _createPuppetLeafs(leafs, address(oriusDrone));
 
         bytes32[][] memory manageTree = _generateMerkleTree(puppetLeafs);
 
@@ -191,9 +191,9 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
         bytes32[][] memory manageProofs = _getProofsUsingTree(manageLeafs, manageTree);
 
         address[] memory targets = new address[](3);
-        targets[0] = address(boringDrone);
-        targets[1] = address(boringDrone);
-        targets[2] = address(boringDrone);
+        targets[0] = address(oriusDrone);
+        targets[1] = address(oriusDrone);
+        targets[2] = address(oriusDrone);
 
         bytes[] memory targetData = new bytes[](3);
         targetData[0] = abi.encodeWithSignature(
@@ -205,7 +205,7 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
             "deposit(address,uint256,address)",
             getAddress(sourceChain, "WETH"),
             1_000e18,
-            address(boringDrone),
+            address(oriusDrone),
             getAddress(sourceChain, "swellSimpleStaking"),
             DroneLib.TARGET_FLAG
         );
@@ -213,7 +213,7 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
             "withdraw(address,uint256,address)",
             getAddress(sourceChain, "WETH"),
             1_000e18,
-            address(boringDrone),
+            address(oriusDrone),
             getAddress(sourceChain, "swellSimpleStaking"),
             DroneLib.TARGET_FLAG
         );
@@ -228,9 +228,9 @@ contract SwellSimpleStakingIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WETH").balanceOf(address(boringDrone)),
+            getERC20(sourceChain, "WETH").balanceOf(address(oriusDrone)),
             1_000e18,
-            "BoringVault should have received 1,000 WETH"
+            "OriusVault should have received 1,000 WETH"
         );
     }
 

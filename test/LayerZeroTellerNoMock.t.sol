@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {
     LayerZeroTeller,
     CrossChainTellerWithGenericBridge
@@ -24,7 +24,7 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
     using AddressToBytes32Lib for address;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant ADMIN_ROLE = 1;
     uint8 public constant MINTER_ROLE = 7;
@@ -67,15 +67,15 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
         ZRO = getERC20(sourceChain, "ZRO");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         sourceTeller = new LayerZeroTeller(
             address(this),
-            address(boringVault),
+            address(oriusVault),
             address(accountant),
             address(WETH),
             address(endPoint),
@@ -85,12 +85,12 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         sourceTeller.setAuthority(rolesAuthority);
 
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
         rolesAuthority.setPublicCapability(
             address(sourceTeller), CrossChainTellerWithGenericBridge.depositAndBridge.selector, true
         );
@@ -109,9 +109,9 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
         accountant.setRateProviderData(EETH, true, address(0));
         accountant.setRateProviderData(WEETH, false, address(WEETH_RATE_PROVIDER));
 
-        // Give BoringVault some WETH, and this address some shares.
-        deal(address(WETH), address(boringVault), 1_000e18);
-        deal(address(boringVault), address(this), 1_000e18, true);
+        // Give OriusVault some WETH, and this address some shares.
+        deal(address(WETH), address(oriusVault), 1_000e18);
+        deal(address(oriusVault), address(this), 1_000e18, true);
 
         // Setup deposit assets.
         sourceTeller.updateAssetData(WETH, true, true, 0);
@@ -141,7 +141,7 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
             sourceTeller.previewFee(uint96(depositAmount), user, abi.encode(layerZeroArbitrumEndpointId), NATIVE_ERC20);
         deal(user, fee);
         vm.startPrank(user);
-        WETH.approve(address(boringVault), depositAmount);
+        WETH.approve(address(oriusVault), depositAmount);
         sourceTeller.depositAndBridge{value: fee}(
             WETH, depositAmount, 0, user, abi.encode(layerZeroArbitrumEndpointId), NATIVE_ERC20, fee
         );
@@ -172,7 +172,7 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
                                 "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
                             ),
                             user,
-                            address(boringVault),
+                            address(oriusVault),
                             weETH_amount,
                             WEETH.nonces(user),
                             block.timestamp
@@ -213,7 +213,7 @@ contract LayerZeroTellerNoMockTest is Test, MerkleTreeHelper {
         address user = vm.addr(1);
         deal(address(WETH), user, depositAmount);
         vm.startPrank(user);
-        WETH.approve(address(boringVault), depositAmount);
+        WETH.approve(address(oriusVault), depositAmount);
         vm.expectRevert(
             bytes(
                 abi.encodeWithSelector(

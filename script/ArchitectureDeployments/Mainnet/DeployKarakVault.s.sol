@@ -19,9 +19,9 @@ contract DeployKarakVaultScript is DeployArcticArchitecture, MainnetAddresses {
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "King Karak LRT";
-    string public boringVaultSymbol = "weETHk";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "King Karak LRT";
+    string public oriusVaultSymbol = "weETHk";
+    uint8 public oriusVaultDecimals = 18;
     address public owner = dev0Address;
 
     function setUp() external {
@@ -48,7 +48,7 @@ contract DeployKarakVaultScript is DeployArcticArchitecture, MainnetAddresses {
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = KarakVaultRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = KarakVaultName;
+        names .oriusVault = KarakVaultName;
         names.manager = KarakVaultManagerName;
         names.accountant = KarakVaultAccountantName;
         names.teller = KarakVaultTellerName;
@@ -71,7 +71,7 @@ contract DeployKarakVaultScript is DeployArcticArchitecture, MainnetAddresses {
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(ITBPositionDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs =
-            abi.encode(deployer.getAddress(names.boringVault), uniswapV3NonFungiblePositionManager);
+            abi.encode(deployer.getAddress(names .oriusVault), uniswapV3NonFungiblePositionManager);
 
         // Setup extra deposit assets.
         uint256 amount = 1e18;
@@ -300,9 +300,9 @@ contract DeployKarakVaultScript is DeployArcticArchitecture, MainnetAddresses {
         _deploy(
             "KarakVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

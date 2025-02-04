@@ -1,7 +1,7 @@
 {
     "metadata": {
         "AccountantAddress": "0x075e60550C6f77f430B284E76aF699bC31651f75",
-        "BoringVaultAddress": "0xE77076518A813616315EaAba6cA8e595E845EeE9",
+        "OriusVaultAddress": "0xE77076518A813616315EaAba6cA8e595E845EeE9",
         "DecoderAndSanitizerAddress": "0xb7Dd199ABE801cC4985B60B8B1365264Eb31ad26",
         "DigestComposition": [
             "Bytes20(DECODER_AND_SANITIZER_ADDRESS)",

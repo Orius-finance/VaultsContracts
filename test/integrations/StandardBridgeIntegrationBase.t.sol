@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -24,7 +24,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -32,7 +32,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {}
@@ -40,10 +40,10 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testBridgingToBaseERC20() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20279353);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress(sourceChain, "WETH"), address(boringVault), 101e18);
+        deal(getAddress(sourceChain, "WETH"), address(oriusVault), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens = new ERC20[](1);
@@ -84,7 +84,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
             "bridgeERC20To(address,address,address,uint256,uint32,bytes)",
             localTokens[0],
             remoteTokens[0],
-            boringVault,
+            oriusVault,
             100e18,
             200_000,
             hex""
@@ -100,10 +100,10 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testBridgingToBaseETH() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20279353);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 101e18);
+        deal(address(oriusVault), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens;
@@ -133,7 +133,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
 
         bytes[] memory targetData = new bytes[](1);
 
-        targetData[0] = abi.encodeWithSignature("bridgeETHTo(address,uint32,bytes)", boringVault, 200_000, hex"");
+        targetData[0] = abi.encodeWithSignature("bridgeETHTo(address,uint32,bytes)", oriusVault, 200_000, hex"");
         uint256[] memory values = new uint256[](1);
         values[0] = 100e18;
         address[] memory decodersAndSanitizers = new address[](1);
@@ -145,10 +145,10 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testBridgingFromBaseERC20() external {
         setSourceChainName("base");
         _createForkAndSetup("BASE_RPC_URL", 16933485);
-        setAddress(false, "base", "boringVault", address(boringVault));
+        setAddress(false, "base", "oriusVault", address(oriusVault));
         setAddress(false, "base", "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(getAddress("base", "WETH"), address(boringVault), 101e18);
+        deal(getAddress("base", "WETH"), address(oriusVault), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens = new ERC20[](1);
@@ -188,7 +188,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
             "bridgeERC20To(address,address,address,uint256,uint32,bytes)",
             localTokens[0],
             remoteTokens[0],
-            boringVault,
+            oriusVault,
             100e18,
             200_000,
             hex""
@@ -204,10 +204,10 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testBridgingFromBaseETH() external {
         setSourceChainName("base");
         _createForkAndSetup("BASE_RPC_URL", 16933485);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
-        deal(address(boringVault), 101e18);
+        deal(address(oriusVault), 101e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         ERC20[] memory localTokens;
@@ -237,7 +237,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
 
         bytes[] memory targetData = new bytes[](1);
 
-        targetData[0] = abi.encodeWithSignature("bridgeETHTo(address,uint32,bytes)", boringVault, 200_000, hex"");
+        targetData[0] = abi.encodeWithSignature("bridgeETHTo(address,uint32,bytes)", oriusVault, 200_000, hex"");
         uint256[] memory values = new uint256[](1);
         values[0] = 100e18;
         address[] memory decodersAndSanitizers = new address[](1);
@@ -249,7 +249,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testProvingWithdrawalTransactionFromBase() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20278158);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
@@ -292,7 +292,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function testFinalizingWithdrawalTransactionFromBase() external {
         setSourceChainName("mainnet");
         _createForkAndSetup("MAINNET_RPC_URL", 20279615);
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
@@ -342,27 +342,27 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
     function _createForkAndSetup(string memory rpcKey, uint256 blockNumber) internal {
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         manager =
-            new ManagerWithMerkleVerification(address(this), address(boringVault), getAddress(sourceChain, "vault"));
+            new ManagerWithMerkleVerification(address(this), address(oriusVault), getAddress(sourceChain, "vault"));
 
-        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new BridgingDecoderAndSanitizer(address(oriusVault)));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -383,7 +383,7 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -394,11 +394,11 @@ contract StandardBridgeIntegrationBaseTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(getAddress(sourceChain, "vault"), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function _startFork(string memory rpcKey, uint256 blockNumber) internal returns (uint256 forkId) {

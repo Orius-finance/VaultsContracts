@@ -19,9 +19,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ChainValues 
     uint256 public privateKey;
 
     // Deployment parameters
-    string public boringVaultName = "Bridging Test Vault";
-    string public boringVaultSymbol = "BTEV";
-    uint8 public boringVaultDecimals = 18;
+    string public oriusVaultName = "Bridging Test Vault";
+    string public oriusVaultSymbol = "BTEV";
+    uint8 public oriusVaultDecimals = 18;
     string internal sourceChain = optimism;
     address public owner;
 
@@ -50,7 +50,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ChainValues 
         // Define names to determine where contracts are deployed.
         names.rolesAuthority = BridgingTestVaultEthRolesAuthorityName;
         names.lens = ArcticArchitectureLensName;
-        names.boringVault = BridgingTestVaultEthName;
+        names .oriusVault = BridgingTestVaultEthName;
         names.manager = BridgingTestVaultEthManagerName;
         names.accountant = BridgingTestVaultEthAccountantName;
         names.teller = BridgingTestVaultEthTellerName;
@@ -73,7 +73,7 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ChainValues 
         // Define Decoder and Sanitizer deployment details.
         bytes memory creationCode = type(EtherFiLiquidEthDecoderAndSanitizer).creationCode;
         bytes memory constructorArgs = abi.encode(
-            deployer.getAddress(names.boringVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
+            deployer.getAddress(names .oriusVault), getAddress(sourceChain, "uniswapV3NonFungiblePositionManager")
         );
 
         // Setup extra deposit assets.
@@ -120,9 +120,9 @@ contract DeployBridgingTestVaultScript is DeployArcticArchitecture, ChainValues 
         _deploy(
             "OptimismBridgingTestVaultDeployment.json",
             owner,
-            boringVaultName,
-            boringVaultSymbol,
-            boringVaultDecimals,
+            oriusVaultName,
+            oriusVaultSymbol,
+            oriusVaultDecimals,
             creationCode,
             constructorArgs,
             delayedWithdrawFeeAddress,

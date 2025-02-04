@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -25,7 +25,7 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
     using stdStorage for StdStorage;
 
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     address public rawDataDecoderAndSanitizer;
     RolesAuthority public rolesAuthority;
 
@@ -33,7 +33,7 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
     uint8 public constant STRATEGIST_ROLE = 2;
     uint8 public constant MANGER_INTERNAL_ROLE = 3;
     uint8 public constant ADMIN_ROLE = 4;
-    uint8 public constant BORING_VAULT_ROLE = 5;
+    uint8 public constant ORIUS_VAULT_ROLE = 5;
     uint8 public constant BALANCER_VAULT_ROLE = 6;
 
     function setUp() external {
@@ -44,32 +44,32 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
 
         _startFork(rpcKey, blockNumber);
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
-        manager = new ManagerWithMerkleVerification(address(this), address(boringVault), address(0));
+        manager = new ManagerWithMerkleVerification(address(this), address(oriusVault), address(0));
 
-        rawDataDecoderAndSanitizer = address(new SymbioticVaultDecoderAndSanitizerFull(address(boringVault)));
+        rawDataDecoderAndSanitizer = address(new SymbioticVaultDecoderAndSanitizerFull(address(oriusVault)));
 
-        setAddress(false, sourceChain, "boringVault", address(boringVault));
+        setAddress(false, sourceChain, "oriusVault", address(oriusVault));
         setAddress(false, sourceChain, "rawDataDecoderAndSanitizer", rawDataDecoderAndSanitizer);
         setAddress(false, sourceChain, "manager", address(manager));
         setAddress(false, sourceChain, "managerAddress", address(manager));
         setAddress(false, sourceChain, "accountantAddress", address(1));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         manager.setAuthority(rolesAuthority);
 
         // Setup roles authority.
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address,bytes,uint256)"))),
             true
         );
         rolesAuthority.setRoleCapability(
             MANAGER_ROLE,
-            address(boringVault),
+            address(oriusVault),
             bytes4(keccak256(abi.encodePacked("manage(address[],bytes[],uint256[])"))),
             true
         );
@@ -90,7 +90,7 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
             ADMIN_ROLE, address(manager), ManagerWithMerkleVerification.setManageRoot.selector, true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
+            ORIUS_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.flashLoan.selector, true
         );
         rolesAuthority.setRoleCapability(
             BALANCER_VAULT_ROLE, address(manager), ManagerWithMerkleVerification.receiveFlashLoan.selector, true
@@ -101,15 +101,15 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         rolesAuthority.setUserRole(address(manager), MANGER_INTERNAL_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(manager), MANAGER_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         rolesAuthority.setUserRole(address(0), BALANCER_VAULT_ROLE, true);
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
     }
 
     function testSymbioticVaultIntegration() external {
-        deal(getAddress(sourceChain, "WSTETH"), address(boringVault), 100e18);
+        deal(getAddress(sourceChain, "WSTETH"), address(oriusVault), 100e18);
 
         ManageLeaf[] memory leafs = new ManageLeaf[](8);
         address[] memory vaults = new address[](1);
@@ -137,8 +137,8 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         bytes[] memory targetData = new bytes[](3);
         targetData[0] =
             abi.encodeWithSelector(ERC20.approve.selector, getAddress(sourceChain, "wstETHSymbioticVault"), 100e18);
-        targetData[1] = abi.encodeWithSignature("deposit(address,uint256)", boringVault, 100e18);
-        targetData[2] = abi.encodeWithSignature("withdraw(address,uint256)", boringVault, 100e18);
+        targetData[1] = abi.encodeWithSignature("deposit(address,uint256)", oriusVault, 100e18);
+        targetData[2] = abi.encodeWithSignature("withdraw(address,uint256)", oriusVault, 100e18);
 
         uint256[] memory values = new uint256[](3);
 
@@ -165,7 +165,7 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         targets[0] = getAddress(sourceChain, "wstETHSymbioticVault");
 
         targetData = new bytes[](1);
-        targetData[0] = abi.encodeWithSignature("claim(address,uint256)", boringVault, epoch);
+        targetData[0] = abi.encodeWithSignature("claim(address,uint256)", oriusVault, epoch);
 
         values = new uint256[](1);
 
@@ -175,9 +175,9 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WSTETH").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "WSTETH").balanceOf(address(oriusVault)),
             100e18,
-            "BoringVault should have 100 wstETH."
+            "OriusVault should have 100 wstETH."
         );
 
         vm.revertTo(beforeClaim);
@@ -194,7 +194,7 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         targetData = new bytes[](1);
         uint256[] memory batch = new uint256[](1);
         batch[0] = epoch;
-        targetData[0] = abi.encodeWithSignature("claimBatch(address,uint256[])", boringVault, batch);
+        targetData[0] = abi.encodeWithSignature("claimBatch(address,uint256[])", oriusVault, batch);
 
         values = new uint256[](1);
 
@@ -204,9 +204,9 @@ contract SymbioticVaultIntegrationTest is Test, MerkleTreeHelper {
         manager.manageVaultWithMerkleVerification(manageProofs, decodersAndSanitizers, targets, targetData, values);
 
         assertEq(
-            getERC20(sourceChain, "WSTETH").balanceOf(address(boringVault)),
+            getERC20(sourceChain, "WSTETH").balanceOf(address(oriusVault)),
             100e18,
-            "BoringVault should have 100 wstETH."
+            "OriusVault should have 100 wstETH."
         );
     }
 

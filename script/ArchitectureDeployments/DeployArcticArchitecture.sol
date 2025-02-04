@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault, Auth} from "src/base/BoringVault.sol";
+import {OriusVault, Auth} from "src/base/OriusVault.sol";
 import {ManagerWithMerkleVerification} from "src/base/Roles/ManagerWithMerkleVerification.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -17,12 +17,12 @@ import {ArcticArchitectureLens} from "src/helper/ArcticArchitectureLens.sol";
 import {ContractNames} from "resources/ContractNames.sol";
 import {GenericRateProvider} from "src/helper/GenericRateProvider.sol";
 import {DelayedWithdraw} from "src/base/Roles/DelayedWithdraw.sol";
-import {BoringDrone} from "src/base/Drones/BoringDrone.sol";
+import {OriusDrone} from "src/base/Drones/OriusDrone.sol";
 import "forge-std/Script.sol";
 import "forge-std/StdJson.sol";
 
 /**
- *  source .env && forge script script/DeployBoringVaultArctic.s.sol:DeployBoringVaultArcticScript --with-gas-price 30000000000 --slow --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify
+ *  source .env && forge script script/DeployOriusVaultArctic.s.sol:DeployOriusVaultArcticScript --with-gas-price 30000000000 --slow --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify
  * @dev Optionally can change `--with-gas-price` to something more reasonable
  */
 contract DeployArcticArchitecture is Script, ContractNames {
@@ -44,7 +44,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
     struct ArchitectureNames {
         string rolesAuthority;
         string lens;
-        string boringVault;
+        string oriusVault;
         string manager;
         string accountant;
         string teller;
@@ -94,7 +94,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
     Deployer public deployer;
     ArcticArchitectureLens public lens;
     ManagerWithMerkleVerification public manager;
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     RolesAuthority public rolesAuthority;
     address public rawDataDecoderAndSanitizer;
     TellerWithMultiAssetSupport public teller;
@@ -116,7 +116,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
     uint8 public droneCount;
     address[] public droneAddresses;
 
-    bytes public boringCreationCode;
+    bytes public oriusCreationCode;
 
     string finalJson;
     string coreOutput;
@@ -138,9 +138,9 @@ contract DeployArcticArchitecture is Script, ContractNames {
     function _deploy(
         string memory deploymentFileName,
         address owner,
-        string memory boringVaultName,
-        string memory boringVaultSymbol,
-        uint8 boringVaultDecimals,
+        string memory oriusVaultName,
+        string memory oriusVaultSymbol,
+        uint8 oriusVaultDecimals,
         bytes memory decoderAndSanitizerCreationCode,
         bytes memory decoderAndSanitizerConstructorArgs,
         address delayedWithdrawFeeAddress,
@@ -171,20 +171,20 @@ contract DeployArcticArchitecture is Script, ContractNames {
                 lens = ArcticArchitectureLens(deployedAddress);
             }
 
-            deployedAddress = _getAddressIfDeployed(names.boringVault);
+            deployedAddress = _getAddressIfDeployed(names .oriusVault);
             if (deployedAddress == address(0)) {
-                creationCode = boringCreationCode.length == 0 ? type(BoringVault).creationCode : boringCreationCode;
-                constructorArgs = abi.encode(owner, boringVaultName, boringVaultSymbol, boringVaultDecimals);
-                boringVault =
-                    BoringVault(payable(deployer.deployContract(names.boringVault, creationCode, constructorArgs, 0)));
+                creationCode = oriusCreationCode.length == 0 ? type(OriusVault).creationCode : oriusCreationCode;
+                constructorArgs = abi.encode(owner, oriusVaultName, oriusVaultSymbol, oriusVaultDecimals);
+                oriusVault =
+                    OriusVault(payable(deployer.deployContract(names .oriusVault, creationCode, constructorArgs, 0)));
             } else {
-                boringVault = BoringVault(payable(deployedAddress));
+                oriusVault = OriusVault(payable(deployedAddress));
             }
 
             deployedAddress = _getAddressIfDeployed(names.manager);
             if (deployedAddress == address(0)) {
                 creationCode = type(ManagerWithMerkleVerification).creationCode;
-                constructorArgs = abi.encode(owner, address(boringVault), configureDeployment.balancerVault);
+                constructorArgs = abi.encode(owner, address(oriusVault), configureDeployment.balancerVault);
                 manager = ManagerWithMerkleVerification(
                     deployer.deployContract(names.manager, creationCode, constructorArgs, 0)
                 );
@@ -197,7 +197,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
                 creationCode = type(AccountantWithRateProviders).creationCode;
                 constructorArgs = abi.encode(
                     owner,
-                    address(boringVault),
+                    address(oriusVault),
                     accountantParameters.payoutAddress,
                     accountantParameters.startingExchangeRate,
                     accountantParameters.base,
@@ -217,7 +217,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
             deployedAddress = _getAddressIfDeployed(names.teller);
             if (deployedAddress == address(0)) {
                 creationCode = type(TellerWithMultiAssetSupport).creationCode;
-                constructorArgs = abi.encode(owner, address(boringVault), address(accountant), configureDeployment.WETH);
+                constructorArgs = abi.encode(owner, address(oriusVault), address(accountant), configureDeployment.WETH);
                 teller = TellerWithMultiAssetSupport(
                     payable(deployer.deployContract(names.teller, creationCode, constructorArgs, 0))
                 );
@@ -241,7 +241,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
             if (deployedAddress == address(0)) {
                 creationCode = type(DelayedWithdraw).creationCode;
                 constructorArgs =
-                    abi.encode(owner, address(boringVault), address(accountant), delayedWithdrawFeeAddress);
+                    abi.encode(owner, address(oriusVault), address(accountant), delayedWithdrawFeeAddress);
                 delayedWithdrawer =
                     DelayedWithdraw(deployer.deployContract(names.delayedWithdrawer, creationCode, constructorArgs, 0));
             } else {
@@ -252,8 +252,8 @@ contract DeployArcticArchitecture is Script, ContractNames {
                 string memory droneName = string.concat(names.droneBaseName, "-", vm.toString(i));
                 deployedAddress = _getAddressIfDeployed(droneName);
                 if (deployedAddress == address(0)) {
-                    creationCode = type(BoringDrone).creationCode;
-                    constructorArgs = abi.encode(address(boringVault), 0);
+                    creationCode = type(OriusDrone).creationCode;
+                    constructorArgs = abi.encode(address(oriusVault), 0);
                     droneAddresses.push(deployer.deployContract(droneName, creationCode, constructorArgs, 0));
                 } else {
                     droneAddresses.push(deployedAddress);
@@ -262,7 +262,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
         } else {
             rolesAuthority = RolesAuthority(_getAddressIfDeployed(names.rolesAuthority));
             lens = ArcticArchitectureLens(_getAddressIfDeployed(names.lens));
-            boringVault = BoringVault(payable(_getAddressIfDeployed(names.boringVault)));
+            oriusVault = OriusVault(payable(_getAddressIfDeployed(names .oriusVault)));
             manager = ManagerWithMerkleVerification(_getAddressIfDeployed(names.manager));
             accountant = AccountantWithRateProviders(_getAddressIfDeployed(names.accountant));
             teller = TellerWithMultiAssetSupport(payable(_getAddressIfDeployed(names.teller)));
@@ -280,12 +280,12 @@ contract DeployArcticArchitecture is Script, ContractNames {
             // MANAGER_ROLE
             if (
                 !rolesAuthority.doesRoleHaveCapability(
-                    MANAGER_ROLE, address(boringVault), bytes4(abi.encodeWithSignature("manage(address,bytes,uint256)"))
+                    MANAGER_ROLE, address(oriusVault), bytes4(abi.encodeWithSignature("manage(address,bytes,uint256)"))
                 )
             ) {
                 rolesAuthority.setRoleCapability(
                     MANAGER_ROLE,
-                    address(boringVault),
+                    address(oriusVault),
                     bytes4(abi.encodeWithSignature("manage(address,bytes,uint256)")),
                     true
                 );
@@ -293,24 +293,24 @@ contract DeployArcticArchitecture is Script, ContractNames {
             if (
                 !rolesAuthority.doesRoleHaveCapability(
                     MANAGER_ROLE,
-                    address(boringVault),
+                    address(oriusVault),
                     bytes4(abi.encodeWithSignature("manage(address[],bytes[],uint256[])"))
                 )
             ) {
                 rolesAuthority.setRoleCapability(
                     MANAGER_ROLE,
-                    address(boringVault),
+                    address(oriusVault),
                     bytes4(abi.encodeWithSignature("manage(address[],bytes[],uint256[])")),
                     true
                 );
             }
             // MINTER_ROLE
-            if (!rolesAuthority.doesRoleHaveCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector)) {
-                rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
+            if (!rolesAuthority.doesRoleHaveCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector)) {
+                rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
             }
             // BURNER_ROLE
-            if (!rolesAuthority.doesRoleHaveCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector)) {
-                rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+            if (!rolesAuthority.doesRoleHaveCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector)) {
+                rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
             }
             // MANAGER_INTERNAL_ROLE
             if (
@@ -347,23 +347,23 @@ contract DeployArcticArchitecture is Script, ContractNames {
                 );
             }
             // OWNER_ROLE
-            if (!rolesAuthority.doesRoleHaveCapability(OWNER_ROLE, address(boringVault), Auth.setAuthority.selector)) {
-                rolesAuthority.setRoleCapability(OWNER_ROLE, address(boringVault), Auth.setAuthority.selector, true);
+            if (!rolesAuthority.doesRoleHaveCapability(OWNER_ROLE, address(oriusVault), Auth.setAuthority.selector)) {
+                rolesAuthority.setRoleCapability(OWNER_ROLE, address(oriusVault), Auth.setAuthority.selector, true);
             }
             if (
-                !rolesAuthority.doesRoleHaveCapability(OWNER_ROLE, address(boringVault), Auth.transferOwnership.selector)
+                !rolesAuthority.doesRoleHaveCapability(OWNER_ROLE, address(oriusVault), Auth.transferOwnership.selector)
             ) {
                 rolesAuthority.setRoleCapability(
-                    OWNER_ROLE, address(boringVault), Auth.transferOwnership.selector, true
+                    OWNER_ROLE, address(oriusVault), Auth.transferOwnership.selector, true
                 );
             }
             if (
                 !rolesAuthority.doesRoleHaveCapability(
-                    OWNER_ROLE, address(boringVault), BoringVault.setBeforeTransferHook.selector
+                    OWNER_ROLE, address(oriusVault), OriusVault.setBeforeTransferHook.selector
                 )
             ) {
                 rolesAuthority.setRoleCapability(
-                    OWNER_ROLE, address(boringVault), BoringVault.setBeforeTransferHook.selector, true
+                    OWNER_ROLE, address(oriusVault), OriusVault.setBeforeTransferHook.selector, true
                 );
             }
             if (
@@ -839,17 +839,17 @@ contract DeployArcticArchitecture is Script, ContractNames {
         if (configureDeployment.finishSetup) {
             // Setup share lock period.
             if (teller.shareLockPeriod() != shareLockPeriod) teller.setShareLockPeriod(shareLockPeriod);
-            if (address(boringVault.hook()) != address(teller)) boringVault.setBeforeTransferHook(address(teller));
+            if (address(oriusVault.hook()) != address(teller)) oriusVault.setBeforeTransferHook(address(teller));
 
             // Set all RolesAuthorities.
-            if (boringVault.authority() != rolesAuthority) boringVault.setAuthority(rolesAuthority);
+            if (oriusVault.authority() != rolesAuthority) oriusVault.setAuthority(rolesAuthority);
             if (manager.authority() != rolesAuthority) manager.setAuthority(rolesAuthority);
             if (accountant.authority() != rolesAuthority) accountant.setAuthority(rolesAuthority);
             if (teller.authority() != rolesAuthority) teller.setAuthority(rolesAuthority);
             if (delayedWithdrawer.authority() != rolesAuthority) delayedWithdrawer.setAuthority(rolesAuthority);
 
             // Renounce ownership
-            if (boringVault.owner() != address(0)) boringVault.transferOwnership(address(0));
+            if (oriusVault.owner() != address(0)) oriusVault.transferOwnership(address(0));
             if (manager.owner() != address(0)) manager.transferOwnership(address(0));
             if (accountant.owner() != address(0)) accountant.transferOwnership(address(0));
             if (teller.owner() != address(0)) teller.transferOwnership(address(0));
@@ -894,7 +894,7 @@ contract DeployArcticArchitecture is Script, ContractNames {
                 string memory coreContracts = "core contracts key";
                 vm.serializeAddress(coreContracts, "RolesAuthority", address(rolesAuthority));
                 vm.serializeAddress(coreContracts, "Lens", address(lens));
-                vm.serializeAddress(coreContracts, "BoringVault", address(boringVault));
+                vm.serializeAddress(coreContracts, "OriusVault", address(oriusVault));
                 vm.serializeAddress(coreContracts, "ManagerWithMerkleVerification", address(manager));
                 vm.serializeAddress(coreContracts, "AccountantWithRateProviders", address(accountant));
                 vm.serializeAddress(coreContracts, "TellerWithMultiAssetSupport", address(teller));

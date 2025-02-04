@@ -2,7 +2,7 @@
 pragma solidity ^0.8.21;
 
 import {MainnetAddresses} from "test/resources/MainnetAddresses.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {TellerWithMultiAssetSupport} from "src/base/Roles/TellerWithMultiAssetSupport.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -21,7 +21,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
 
     uint8 public constant ADMIN_ROLE = 1;
     uint8 public constant MINTER_ROLE = 7;
@@ -60,27 +60,27 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         EETH_LIQUIDITY_POOL = getAddress(sourceChain, "EETH_LIQUIDITY_POOL");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         teller =
-            new TellerWithMultiAssetSupport(address(this), address(boringVault), address(accountant), address(WETH));
+            new TellerWithMultiAssetSupport(address(this), address(oriusVault), address(accountant), address(WETH));
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
 
         atomicQueue = new AtomicQueue(address(this), Authority(address(0)));
         atomicSolverV3 = new AtomicSolverV3(address(this), rolesAuthority);
 
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
         accountant.setAuthority(rolesAuthority);
         teller.setAuthority(rolesAuthority);
         atomicQueue.setAuthority(rolesAuthority);
 
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
-        rolesAuthority.setRoleCapability(BURNER_ROLE, address(boringVault), BoringVault.exit.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(BURNER_ROLE, address(oriusVault), OriusVault.exit.selector, true);
         rolesAuthority.setRoleCapability(
             ADMIN_ROLE, address(teller), TellerWithMultiAssetSupport.updateAssetData.selector, true
         );
@@ -126,7 +126,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
     function testDepositReverting(uint256 amount) external {
         amount = bound(amount, 0.0001e18, 10_000e18);
         // Turn on share lock period, and deposit reverting
-        boringVault.setBeforeTransferHook(address(teller));
+        oriusVault.setBeforeTransferHook(address(teller));
 
         teller.setShareLockPeriod(1 days);
 
@@ -136,8 +136,8 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         deal(address(this), eETH_amount + 1);
         ILiquidityPool(EETH_LIQUIDITY_POOL).deposit{value: eETH_amount + 1}();
 
-        WETH.safeApprove(address(boringVault), wETH_amount);
-        EETH.safeApprove(address(boringVault), eETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
+        EETH.safeApprove(address(oriusVault), eETH_amount);
         uint256 shares0 = teller.deposit(WETH, wETH_amount, 0);
         uint256 firstDepositTimestamp = block.timestamp;
         // Skip 1 days to finalize first deposit.
@@ -173,8 +173,8 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         deal(address(this), eETH_amount + 1);
         ILiquidityPool(EETH_LIQUIDITY_POOL).deposit{value: eETH_amount + 1}();
 
-        WETH.safeApprove(address(boringVault), wETH_amount);
-        EETH.safeApprove(address(boringVault), eETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
+        EETH.safeApprove(address(oriusVault), eETH_amount);
 
         uint96 currentNonce = teller.depositNonce();
 
@@ -186,7 +186,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
 
         uint256 expected_shares = 2 * amount;
 
-        assertEq(boringVault.balanceOf(address(this)), expected_shares, "Should have received expected shares");
+        assertEq(oriusVault.balanceOf(address(this)), expected_shares, "Should have received expected shares");
     }
 
     function testUserDepositNonPeggedAssets(uint256 amount) external {
@@ -195,14 +195,14 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         uint256 weETH_amount = amount.mulDivDown(1e18, IRateProvider(WEETH_RATE_PROVIDER).getRate());
         deal(address(WEETH), address(this), weETH_amount);
 
-        WEETH.safeApprove(address(boringVault), weETH_amount);
+        WEETH.safeApprove(address(oriusVault), weETH_amount);
 
         teller.deposit(WEETH, weETH_amount, 0);
 
         uint256 expected_shares = amount;
 
         assertApproxEqRel(
-            boringVault.balanceOf(address(this)), expected_shares, 0.000001e18, "Should have received expected shares"
+            oriusVault.balanceOf(address(this)), expected_shares, 0.000001e18, "Should have received expected shares"
         );
     }
 
@@ -213,7 +213,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
 
         teller.deposit{value: amount}(ERC20(NATIVE), 0, 0);
 
-        assertEq(boringVault.balanceOf(address(this)), amount, "Should have received expected shares");
+        assertEq(oriusVault.balanceOf(address(this)), amount, "Should have received expected shares");
     }
 
     function testUserPermitDeposit(uint256 amount) external {
@@ -233,7 +233,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                     abi.encode(
                         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                         user,
-                        address(boringVault),
+                        address(oriusVault),
                         weETH_amount,
                         WEETH.nonces(user),
                         block.timestamp
@@ -256,7 +256,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                     abi.encode(
                         keccak256("permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                         user,
-                        address(boringVault),
+                        address(oriusVault),
                         weETH_amount,
                         WEETH.nonces(user),
                         block.timestamp
@@ -293,7 +293,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                     abi.encode(
                         keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"),
                         user,
-                        address(boringVault),
+                        address(oriusVault),
                         weETH_amount,
                         WEETH.nonces(user),
                         block.timestamp
@@ -306,7 +306,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         // Assume attacker seems users TX in the mem pool and tries griefing them by calling `permit` first.
         address attacker = vm.addr(0xDEAD);
         vm.startPrank(attacker);
-        WEETH.permit(user, address(boringVault), weETH_amount, block.timestamp, v, r, s);
+        WEETH.permit(user, address(oriusVault), weETH_amount, block.timestamp, v, r, s);
         vm.stopPrank();
 
         // Users TX is still successful.
@@ -314,7 +314,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         teller.depositWithPermit(WEETH, weETH_amount, 0, block.timestamp, v, r, s);
         vm.stopPrank();
 
-        assertTrue(boringVault.balanceOf(user) > 0, "Should have received shares");
+        assertTrue(oriusVault.balanceOf(user) > 0, "Should have received shares");
     }
 
     function testBulkDeposit(uint256 amount) external {
@@ -328,9 +328,9 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         uint256 weETH_amount = amount.mulDivDown(1e18, IRateProvider(WEETH_RATE_PROVIDER).getRate());
         deal(address(WEETH), address(this), weETH_amount);
 
-        WETH.safeApprove(address(boringVault), wETH_amount);
-        EETH.safeApprove(address(boringVault), eETH_amount);
-        WEETH.safeApprove(address(boringVault), weETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
+        EETH.safeApprove(address(oriusVault), eETH_amount);
+        WEETH.safeApprove(address(oriusVault), weETH_amount);
 
         teller.bulkDeposit(WETH, wETH_amount, 0, address(this));
         teller.bulkDeposit(EETH, eETH_amount, 0, address(this));
@@ -339,7 +339,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         uint256 expected_shares = 3 * amount;
 
         assertApproxEqRel(
-            boringVault.balanceOf(address(this)), expected_shares, 0.0001e18, "Should have received expected shares"
+            oriusVault.balanceOf(address(this)), expected_shares, 0.0001e18, "Should have received expected shares"
         );
     }
 
@@ -354,9 +354,9 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         uint256 weETH_amount = amount.mulDivDown(1e18, IRateProvider(WEETH_RATE_PROVIDER).getRate());
         deal(address(WEETH), address(this), weETH_amount);
 
-        WETH.safeApprove(address(boringVault), wETH_amount);
-        EETH.safeApprove(address(boringVault), eETH_amount);
-        WEETH.safeApprove(address(boringVault), weETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
+        EETH.safeApprove(address(oriusVault), eETH_amount);
+        WEETH.safeApprove(address(oriusVault), weETH_amount);
 
         uint256 shares_0 = teller.bulkDeposit(WETH, wETH_amount, 0, address(this));
         uint256 shares_1 = teller.bulkDeposit(EETH, eETH_amount, 0, address(this));
@@ -379,7 +379,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         deal(address(WETH), user, wETH_amount);
 
         vm.startPrank(user);
-        WETH.safeApprove(address(boringVault), wETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
 
         uint256 shares = teller.deposit(WETH, wETH_amount, 0);
 
@@ -390,8 +390,8 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
             offerAmount: uint96(shares),
             inSolve: false
         });
-        boringVault.approve(address(atomicQueue), shares);
-        atomicQueue.updateAtomicRequest(boringVault, WETH, req);
+        oriusVault.approve(address(atomicQueue), shares);
+        atomicQueue.updateAtomicRequest(oriusVault, WETH, req);
         vm.stopPrank();
 
         // Solver approves solver contract to spend enough assets to cover withdraw.
@@ -400,7 +400,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         // Solve withdraw request.
         address[] memory users = new address[](1);
         users[0] = user;
-        atomicSolverV3.redeemSolve(atomicQueue, boringVault, WETH, users, 0, type(uint256).max, teller);
+        atomicSolverV3.redeemSolve(atomicQueue, oriusVault, WETH, users, 0, type(uint256).max, teller);
         vm.stopPrank();
     }
 
@@ -429,12 +429,12 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
     }
 
     function testDenyList() external {
-        boringVault.setBeforeTransferHook(address(teller));
+        oriusVault.setBeforeTransferHook(address(teller));
         address attacker = vm.addr(0xDEAD);
-        deal(address(boringVault), attacker, 1e18, true);
+        deal(address(oriusVault), attacker, 1e18, true);
         // Transfers currently work.
         vm.prank(attacker);
-        boringVault.transfer(address(this), 0.1e18);
+        oriusVault.transfer(address(this), 0.1e18);
 
         // But if attacker is added to the deny list, transfers should fail.
         teller.denyAll(attacker);
@@ -448,7 +448,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 attacker
             )
         );
-        boringVault.transfer(address(this), 0.1e18);
+        oriusVault.transfer(address(this), 0.1e18);
         vm.stopPrank();
 
         vm.expectRevert(
@@ -459,13 +459,13 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 address(this)
             )
         );
-        boringVault.transferFrom(attacker, address(this), 0.1e18);
+        oriusVault.transferFrom(attacker, address(this), 0.1e18);
 
         // If attacker is removed from the deny list, transfers should work again.
         teller.allowAll(attacker);
 
         vm.prank(attacker);
-        boringVault.transfer(address(this), 0.1e18);
+        oriusVault.transfer(address(this), 0.1e18);
 
         // Make sure we can deny certain operators.
         address operator = vm.addr(2);
@@ -482,21 +482,21 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 operator
             )
         );
-        boringVault.transferFrom(normalUser, normalUser, 1e18);
+        oriusVault.transferFrom(normalUser, normalUser, 1e18);
         vm.stopPrank();
     }
 
     function testHookLogic() external {
-        boringVault.setBeforeTransferHook(address(teller));
+        oriusVault.setBeforeTransferHook(address(teller));
         address from = vm.addr(1);
         address to = vm.addr(2);
 
-        deal(address(boringVault), from, 100e18, true);
+        deal(address(oriusVault), from, 100e18, true);
         vm.prank(from);
-        boringVault.approve(address(this), 100e18);
+        oriusVault.approve(address(this), 100e18);
 
         // Transfers currently work.
-        boringVault.transferFrom(from, to, 1e18);
+        oriusVault.transferFrom(from, to, 1e18);
 
         // Transfers fail if from is denied.
         teller.denyFrom(from);
@@ -508,7 +508,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 address(this)
             )
         );
-        boringVault.transferFrom(from, to, 1e18);
+        oriusVault.transferFrom(from, to, 1e18);
 
         teller.allowFrom(from);
 
@@ -522,7 +522,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 address(this)
             )
         );
-        boringVault.transferFrom(from, to, 1e18);
+        oriusVault.transferFrom(from, to, 1e18);
 
         teller.allowTo(to);
 
@@ -536,12 +536,12 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                 address(this)
             )
         );
-        boringVault.transferFrom(from, to, 1e18);
+        oriusVault.transferFrom(from, to, 1e18);
 
         teller.allowOperator(address(this));
 
         // Transfers currently work.
-        boringVault.transferFrom(from, to, 1e18);
+        oriusVault.transferFrom(from, to, 1e18);
     }
 
     function testSharePremiumLogicERC20Deposit(uint256 depositAmount, uint16 sharePremium) external {
@@ -550,11 +550,11 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         teller.updateAssetData(WETH, true, true, sharePremium);
 
         deal(address(WETH), address(this), depositAmount);
-        WETH.approve(address(boringVault), depositAmount);
+        WETH.approve(address(oriusVault), depositAmount);
 
-        uint256 shareDelta = boringVault.balanceOf(address(this));
+        uint256 shareDelta = oriusVault.balanceOf(address(this));
         uint256 sharesOut = teller.deposit(WETH, depositAmount, 0);
-        shareDelta = boringVault.balanceOf(address(this)) - shareDelta;
+        shareDelta = oriusVault.balanceOf(address(this)) - shareDelta;
 
         // WETH is 1:1 with share price, so shares out should equal depositAmount - sharePremium
         uint256 expectedSharesOut = depositAmount.mulDivDown(1e4 - sharePremium, 1e4);
@@ -562,7 +562,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         assertEq(shareDelta, sharesOut, "Share delta should match shares out.");
         assertEq(sharesOut, expectedSharesOut, "Shares out should equal expected shares out.");
         assertEq(WETH.balanceOf(address(this)), 0, "All assets should have been spent.");
-        assertEq(WETH.balanceOf(address(boringVault)), depositAmount, "All assets should be in boring vault.");
+        assertEq(WETH.balanceOf(address(oriusVault)), depositAmount, "All assets should be in orius vault.");
     }
 
     function testSharePremiumLogicNativeDeposit(uint256 depositAmount, uint16 sharePremium) external {
@@ -572,9 +572,9 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
 
         deal(address(this), depositAmount);
 
-        uint256 shareDelta = boringVault.balanceOf(address(this));
+        uint256 shareDelta = oriusVault.balanceOf(address(this));
         uint256 sharesOut = teller.deposit{value: depositAmount}(ERC20(NATIVE), 0, 0);
-        shareDelta = boringVault.balanceOf(address(this)) - shareDelta;
+        shareDelta = oriusVault.balanceOf(address(this)) - shareDelta;
 
         // ETH is 1:1 with share price, so shares out should equal depositAmount - sharePremium
         uint256 expectedSharesOut = depositAmount.mulDivDown(1e4 - sharePremium, 1e4);
@@ -582,7 +582,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         assertEq(shareDelta, sharesOut, "Share delta should match shares out.");
         assertEq(sharesOut, expectedSharesOut, "Shares out should equal expected shares out.");
         assertEq(address(this).balance, 0, "All assets should have been spent.");
-        assertEq(WETH.balanceOf(address(boringVault)), depositAmount, "All assets should be in boring vault.");
+        assertEq(WETH.balanceOf(address(oriusVault)), depositAmount, "All assets should be in orius vault.");
     }
 
     function testAllowDeposits() external {
@@ -670,15 +670,15 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
     }
 
     function testShowDepositAndTransferLogic() external {
-        boringVault.setBeforeTransferHook(address(teller));
+        oriusVault.setBeforeTransferHook(address(teller));
         // If share lock period is set to 0 we allow for deposit and transfer in the same tx.
         teller.setShareLockPeriod(0);
 
         address user = vm.addr(1);
 
-        uint256 shareDelta = boringVault.balanceOf(user);
+        uint256 shareDelta = oriusVault.balanceOf(user);
         depositAndTransfer(WETH, 1e18, user, false);
-        shareDelta = boringVault.balanceOf(user) - shareDelta;
+        shareDelta = oriusVault.balanceOf(user) - shareDelta;
 
         assertEq(shareDelta, 1e18, "User should have received 1 share.");
 
@@ -779,14 +779,14 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         teller.setShareLockPeriod(3 days + 1);
 
         teller.setShareLockPeriod(3 days);
-        boringVault.setBeforeTransferHook(address(teller));
+        oriusVault.setBeforeTransferHook(address(teller));
 
         // Have user deposit
         address user = vm.addr(333);
         vm.startPrank(user);
         uint256 wETH_amount = 1e18;
         deal(address(WETH), user, wETH_amount);
-        WETH.safeApprove(address(boringVault), wETH_amount);
+        WETH.safeApprove(address(oriusVault), wETH_amount);
 
         teller.deposit(WETH, wETH_amount, 0);
 
@@ -794,20 +794,20 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
         vm.expectRevert(
             abi.encodeWithSelector(TellerWithMultiAssetSupport.TellerWithMultiAssetSupport__SharesAreLocked.selector)
         );
-        boringVault.transfer(address(this), 1);
+        oriusVault.transfer(address(this), 1);
 
         vm.stopPrank();
         // Calling transferFrom should also revert.
         vm.expectRevert(
             abi.encodeWithSelector(TellerWithMultiAssetSupport.TellerWithMultiAssetSupport__SharesAreLocked.selector)
         );
-        boringVault.transferFrom(user, address(this), 1);
+        oriusVault.transferFrom(user, address(this), 1);
 
         // But if user waits 3 days.
         skip(3 days + 1);
         // They can now transfer.
         vm.prank(user);
-        boringVault.transfer(address(this), 1);
+        oriusVault.transfer(address(this), 1);
     }
 
     // ========================================= HELPER FUNCTIONS =========================================
@@ -819,7 +819,7 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
 
     function depositAndTransfer(ERC20 asset, uint256 depositAmount, address to, bool expectRevert) public {
         deal(address(asset), address(this), depositAmount);
-        asset.approve(address(boringVault), depositAmount);
+        asset.approve(address(oriusVault), depositAmount);
         uint256 shares = teller.deposit(asset, depositAmount, 0);
         if (expectRevert) {
             vm.expectRevert(
@@ -829,9 +829,9 @@ contract TellerWithMultiAssetSupportTest is Test, MerkleTreeHelper {
                     )
                 )
             );
-            boringVault.transfer(to, shares);
+            oriusVault.transfer(to, shares);
         } else {
-            boringVault.transfer(to, shares);
+            oriusVault.transfer(to, shares);
         }
     }
 }

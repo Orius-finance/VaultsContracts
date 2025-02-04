@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.21;
 
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
@@ -18,7 +18,7 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
     using stdStorage for StdStorage;
 
-    BoringVault public boringVault;
+    OriusVault public oriusVault;
     AccountantWithRateProviders public accountant;
     address public payout_address = vm.addr(7777777);
     RolesAuthority public rolesAuthority;
@@ -28,7 +28,7 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
     uint8 public constant MINTER_ROLE = 1;
     uint8 public constant ADMIN_ROLE = 2;
     uint8 public constant UPDATE_EXCHANGE_RATE_ROLE = 3;
-    uint8 public constant BORING_VAULT_ROLE = 4;
+    uint8 public constant ORIUS_VAULT_ROLE = 4;
 
     ERC20 internal WETH;
     ERC20 internal EETH;
@@ -57,18 +57,18 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
         mantleLspStaking = getAddress(sourceChain, "mantleLspStaking");
         WEETH_RATE_PROVIDER = getAddress(sourceChain, "WEETH_RATE_PROVIDER");
 
-        boringVault = new BoringVault(address(this), "Boring Vault", "BV", 18);
+        oriusVault = new OriusVault(address(this), "Orius Vault", "BV", 18);
 
         accountant = new AccountantWithRateProviders(
-            address(this), address(boringVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
+            address(this), address(oriusVault), payout_address, 1e18, address(WETH), 1.001e4, 0.999e4, 1, 0, 0
         );
 
         rolesAuthority = new RolesAuthority(address(this), Authority(address(0)));
         accountant.setAuthority(rolesAuthority);
-        boringVault.setAuthority(rolesAuthority);
+        oriusVault.setAuthority(rolesAuthority);
 
         // Setup roles authority.
-        rolesAuthority.setRoleCapability(MINTER_ROLE, address(boringVault), BoringVault.enter.selector, true);
+        rolesAuthority.setRoleCapability(MINTER_ROLE, address(oriusVault), OriusVault.enter.selector, true);
         rolesAuthority.setRoleCapability(
             ADMIN_ROLE, address(accountant), AccountantWithRateProviders.pause.selector, true
         );
@@ -100,19 +100,19 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
             true
         );
         rolesAuthority.setRoleCapability(
-            BORING_VAULT_ROLE, address(accountant), AccountantWithRateProviders.claimFees.selector, true
+            ORIUS_VAULT_ROLE, address(accountant), AccountantWithRateProviders.claimFees.selector, true
         );
 
-        // Allow the boring vault to receive ETH.
-        rolesAuthority.setPublicCapability(address(boringVault), bytes4(0), true);
+        // Allow the orius vault to receive ETH.
+        rolesAuthority.setPublicCapability(address(oriusVault), bytes4(0), true);
 
         rolesAuthority.setUserRole(address(this), MINTER_ROLE, true);
         rolesAuthority.setUserRole(address(this), ADMIN_ROLE, true);
         rolesAuthority.setUserRole(address(this), UPDATE_EXCHANGE_RATE_ROLE, true);
-        rolesAuthority.setUserRole(address(boringVault), BORING_VAULT_ROLE, true);
+        rolesAuthority.setUserRole(address(oriusVault), ORIUS_VAULT_ROLE, true);
         deal(address(WETH), address(this), 1_000e18);
-        WETH.safeApprove(address(boringVault), 1_000e18);
-        boringVault.enter(address(this), WETH, 1_000e18, address(address(this)), 1_000e18);
+        WETH.safeApprove(address(oriusVault), 1_000e18);
+        oriusVault.enter(address(this), WETH, 1_000e18, address(address(this)), 1_000e18);
 
         accountant.setRateProviderData(EETH, true, address(0));
         accountant.setRateProviderData(WEETH, false, address(WEETH_RATE_PROVIDER));
@@ -413,7 +413,7 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
         (,, fees_owed,,,,,,,,,) = accountant.accountantState();
         assertEq(fees_owed, expected_fees_owed, "Fees owed should equal expected");
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         WETH.safeApprove(address(accountant), fees_owed);
         accountant.claimFees(WETH);
         vm.stopPrank();
@@ -425,8 +425,8 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
         new_exchange_rate = uint96(1.0015e18);
         accountant.updateExchangeRate(new_exchange_rate);
 
-        deal(address(WEETH), address(boringVault), 1e18);
-        vm.startPrank(address(boringVault));
+        deal(address(WEETH), address(oriusVault), 1e18);
+        vm.startPrank(address(oriusVault));
         WEETH.safeApprove(address(accountant), 1e18);
         accountant.claimFees(WEETH);
         vm.stopPrank();
@@ -544,13 +544,13 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
         vm.startPrank(attacker);
         vm.expectRevert(
             abi.encodeWithSelector(
-                AccountantWithRateProviders.AccountantWithRateProviders__OnlyCallableByBoringVault.selector
+                AccountantWithRateProviders.AccountantWithRateProviders__OnlyCallableByOriusVault.selector
             )
         );
         accountant.claimFees(WETH);
         vm.stopPrank();
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         vm.expectRevert(
             abi.encodeWithSelector(AccountantWithRateProviders.AccountantWithRateProviders__Paused.selector)
         );
@@ -559,7 +559,7 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
 
         accountant.unpause();
 
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         vm.expectRevert(
             abi.encodeWithSelector(AccountantWithRateProviders.AccountantWithRateProviders__ZeroFeesOwed.selector)
         );
@@ -567,7 +567,7 @@ contract AccountantWithRateProvidersTest is Test, MerkleTreeHelper {
         vm.stopPrank();
 
         // Trying to claimFees with unsupported token should revert.
-        vm.startPrank(address(boringVault));
+        vm.startPrank(address(oriusVault));
         vm.expectRevert();
         accountant.claimFees(ETHX);
         vm.stopPrank();

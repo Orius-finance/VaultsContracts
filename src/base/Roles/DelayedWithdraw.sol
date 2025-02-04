@@ -3,7 +3,7 @@ pragma solidity ^0.8.21;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {WETH} from "@solmate/tokens/WETH.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -13,7 +13,7 @@ import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
 
 contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
-    using SafeTransferLib for BoringVault;
+    using SafeTransferLib for OriusVault;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -83,8 +83,8 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
     bool public isPaused;
 
     /**
-     * @notice Whether or not the contract should pull funds from the Boring Vault when completing a withdrawal,
-     *         or use funds the BoringVault has previously sent to this contract.
+     * @notice Whether or not the contract should pull funds from the Orius Vault when completing a withdrawal,
+     *         or use funds the OriusVault has previously sent to this contract.
      */
     bool public pullFundsFromVault;
 
@@ -111,8 +111,8 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
     error DelayedWithdraw__ThirdPartyCompletionNotAllowed();
     error DelayedWithdraw__RequestPastCompletionWindow();
     error DelayedWithdraw__Paused();
-    error DelayedWithdraw__CallerNotBoringVault();
-    error DelayedWithdraw__CannotWithdrawBoringToken();
+    error DelayedWithdraw__CallerNotOriusVault();
+    error DelayedWithdraw__CannotWithdrawOriusToken();
 
     //============================== EVENTS ===============================
 
@@ -139,21 +139,21 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
     AccountantWithRateProviders internal immutable accountant;
 
     /**
-     * @notice The BoringVault contract that users are withdrawing from.
+     * @notice The OriusVault contract that users are withdrawing from.
      */
-    BoringVault internal immutable boringVault;
+    OriusVault internal immutable oriusVault;
 
     /**
      * @notice Constant that represents 1 share.
      */
     uint256 internal immutable ONE_SHARE;
 
-    constructor(address _owner, address _boringVault, address _accountant, address _feeAddress)
+    constructor(address _owner, address _oriusVault, address _accountant, address _feeAddress)
         Auth(_owner, Authority(address(0)))
     {
         accountant = AccountantWithRateProviders(_accountant);
-        boringVault = BoringVault(payable(_boringVault));
-        ONE_SHARE = 10 ** boringVault.decimals();
+        oriusVault = OriusVault(payable(_oriusVault));
+        ONE_SHARE = 10 ** oriusVault.decimals();
         if (_feeAddress == address(0)) revert DelayedWithdraw__BadAddress();
         feeAddress = _feeAddress;
     }
@@ -319,23 +319,23 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
     }
 
     /**
-     * @notice Withdraws a non boring token from the contract.
-     * @dev Callable by BoringVault.
-     * @dev Eventhough withdrawing the BoringVault share from this contract requires
+     * @notice Withdraws a non orius token from the contract.
+     * @dev Callable by OriusVault.
+     * @dev Eventhough withdrawing the OriusVault share from this contract requires
      *      a malicious leaf in the merkle tree, we explicitly revert if `token`
-     *      is the BoringVault.
+     *      is the OriusVault.
      * @dev For future reference if this function selector is ever changed, the
      *      associated function selector must be updated in `BaseDecoderAndSanitizer.sol`.
      */
-    function withdrawNonBoringToken(ERC20 token, uint256 amount) external {
-        if (msg.sender != address(boringVault)) revert DelayedWithdraw__CallerNotBoringVault();
-        if (address(token) == address(boringVault)) revert DelayedWithdraw__CannotWithdrawBoringToken();
+    function withdrawNonOriusToken(ERC20 token, uint256 amount) external {
+        if (msg.sender != address(oriusVault)) revert DelayedWithdraw__CallerNotOriusVault();
+        if (address(token) == address(oriusVault)) revert DelayedWithdraw__CannotWithdrawOriusToken();
 
         if (amount == type(uint256).max) {
             amount = token.balanceOf(address(this));
         }
 
-        token.safeTransfer(address(boringVault), amount);
+        token.safeTransfer(address(oriusVault), amount);
     }
 
     // ========================================= PUBLIC FUNCTIONS =========================================
@@ -363,7 +363,7 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
         if (!withdrawAsset.allowWithdraws) revert DelayedWithdraw__WithdrawsNotAllowed();
         if (maxLoss > MAX_LOSS) revert DelayedWithdraw__MaxLossTooLarge();
 
-        boringVault.safeTransferFrom(msg.sender, address(this), shares);
+        oriusVault.safeTransferFrom(msg.sender, address(this), shares);
 
         withdrawAsset.outstandingShares += shares;
 
@@ -444,7 +444,7 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
         if (shares == 0) revert DelayedWithdraw__NoSharesToWithdraw();
         withdrawAsset.outstandingShares -= shares;
         req.shares = 0;
-        boringVault.safeTransfer(account, shares);
+        oriusVault.safeTransfer(account, shares);
 
         emit WithdrawCancelled(account, asset, shares);
     }
@@ -489,7 +489,7 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
             shares -= fee;
 
             // Transfer fee to feeAddress.
-            boringVault.safeTransfer(feeAddress, fee);
+            oriusVault.safeTransfer(feeAddress, fee);
         }
 
         // Calculate assets out.
@@ -499,10 +499,10 @@ contract DelayedWithdraw is Auth, ReentrancyGuard, IPausable {
 
         if (pullFundsFromVault) {
             // Burn shares and transfer assets to user.
-            boringVault.exit(account, asset, assetsOut, address(this), shares);
+            oriusVault.exit(account, asset, assetsOut, address(this), shares);
         } else {
             // Burn shares.
-            boringVault.exit(account, asset, 0, address(this), shares);
+            oriusVault.exit(account, asset, 0, address(this), shares);
             // Transfer assets to user.
             asset.safeTransfer(account, assetsOut);
         }

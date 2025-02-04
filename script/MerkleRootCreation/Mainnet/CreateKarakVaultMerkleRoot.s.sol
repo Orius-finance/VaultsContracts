@@ -16,7 +16,7 @@ import "forge-std/Script.sol";
 contract CreateKarakVaultMerkleRootScript is Script, MerkleTreeHelper {
     using FixedPointMathLib for uint256;
 
-    address public boringVault = 0x7223442cad8e9cA474fC40109ab981608F8c4273;
+    address public oriusVault = 0x7223442cad8e9cA474fC40109ab981608F8c4273;
     address public managerAddress = 0x91A2482EA778F3C9AAE1d3768D9e558D6794b972;
     address public accountantAddress = 0x126af21dc55C300B7D0bBfC4F3898F558aE8156b;
     address public rawDataDecoderAndSanitizer = 0xcfa57ea1b1E138cf89050253CcF5d0836566C06D;
@@ -47,7 +47,7 @@ contract CreateKarakVaultMerkleRootScript is Script, MerkleTreeHelper {
 
     function generateKarakVaultStrategistMerkleRoot() public {
         setSourceChainName(mainnet);
-        setAddress(false, mainnet, "boringVault", boringVault);
+        setAddress(false, mainnet, "oriusVault", oriusVault);
         setAddress(false, mainnet, "managerAddress", managerAddress);
         setAddress(false, mainnet, "accountantAddress", accountantAddress);
         setAddress(false, mainnet, "rawDataDecoderAndSanitizer", itbDecoderAndSanitizer);

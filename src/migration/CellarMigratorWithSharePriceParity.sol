@@ -2,25 +2,25 @@
 pragma solidity ^0.8.21;
 
 import {AccountantWithRateProviders} from "src/base/Roles/AccountantWithRateProviders.sol";
-import {BoringVault, ERC20} from "src/base/BoringVault.sol";
+import {OriusVault, ERC20} from "src/base/OriusVault.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 
 /**
- * @notice This contract is intended to be used to migrate a Cellar to a BoringVault, while maintaining the share price parity.
- *         In order to do this, ALL assets in the Cellar must be in the BoringVault, and the vast majority of BoringVault
+ * @notice This contract is intended to be used to migrate a Cellar to a OriusVault, while maintaining the share price parity.
+ *         In order to do this, ALL assets in the Cellar must be in the OriusVault, and the vast majority of OriusVault
  *         shares must be owned by the Cellar.
  */
 contract CellarMigratorWithSharePriceParity {
     using FixedPointMathLib for uint256;
 
     /**
-     * @notice The BoringVault the Cellar is migrating to.
+     * @notice The OriusVault the Cellar is migrating to.
      */
-    BoringVault internal immutable boringVault;
+    OriusVault internal immutable oriusVault;
 
     /**
-     * @notice The accountant of the BoringVault.
+     * @notice The accountant of the OriusVault.
      */
     AccountantWithRateProviders internal immutable accountant;
 
@@ -39,8 +39,8 @@ contract CellarMigratorWithSharePriceParity {
      */
     bool public migrationDone;
 
-    constructor(BoringVault bv, ERC4626 v1, AccountantWithRateProviders _accountant, address _migrator) {
-        boringVault = bv;
+    constructor(OriusVault bv, ERC4626 v1, AccountantWithRateProviders _accountant, address _migrator) {
+        oriusVault = bv;
         target = v1;
         accountant = _accountant;
         migrator = _migrator;
@@ -52,7 +52,7 @@ contract CellarMigratorWithSharePriceParity {
      * @dev Only callable once.
      * @param checkIfCellarOwnsAllShares Bool indicating if the Cellar should own all shares of the target.
      * @param totalAssetsTolerance The tolerance for the change of total assets of the target.
-     * @dev If `checkIfCellarOwnsAllShares` is true, the Cellar must own all BoringVault shares.
+     * @dev If `checkIfCellarOwnsAllShares` is true, the Cellar must own all OriusVault shares.
      * @dev `totalAssetsTolerance` with 4 decimals, must be less than 1e4. There is no explicit check for this,
      *       but the `minimumTotalAssets` calcualtion will revert from underflow if it is larger than 1e4.
      */
@@ -63,7 +63,7 @@ contract CellarMigratorWithSharePriceParity {
         // Once all assets have been migrated from v1 to the bv, in order to make the share price identical,
         // v1 must hold the same amount of bv shares, as its total supply.
         uint256 targetTotalSupply = target.totalSupply();
-        uint256 targetBvShares = boringVault.balanceOf(address(target));
+        uint256 targetBvShares = oriusVault.balanceOf(address(target));
         uint8 targetDecimals = target.decimals();
         uint256 targetTotalAssets = target.totalAssets();
         uint256 startingSharePrice = targetTotalAssets.mulDivDown(10 ** targetDecimals, targetTotalSupply);
@@ -73,20 +73,20 @@ contract CellarMigratorWithSharePriceParity {
 
         if (checkIfCellarOwnsAllShares) {
             // Make sure that Cellar owns all shares of the target.
-            require(targetBvShares == boringVault.totalSupply(), "SHARES");
+            require(targetBvShares == oriusVault.totalSupply(), "SHARES");
         }
 
-        // Update target's BoringVault share amount to keep share price constant.
+        // Update target's OriusVault share amount to keep share price constant.
         if (targetBvShares < targetTotalSupply) {
             // If target has less bv shares than its total supply, mint the difference.
-            boringVault.enter(address(0), ERC20(address(0)), 0, address(target), targetTotalSupply - targetBvShares);
+            oriusVault.enter(address(0), ERC20(address(0)), 0, address(target), targetTotalSupply - targetBvShares);
         } else if (targetBvShares > targetTotalSupply) {
             // If target has more bv shares than its total supply, burn the difference.
-            boringVault.exit(address(0), ERC20(address(0)), 0, address(target), targetBvShares - targetTotalSupply);
+            oriusVault.exit(address(0), ERC20(address(0)), 0, address(target), targetBvShares - targetTotalSupply);
         }
 
         // Make sure that the total supply of target matches the bv balance of target.
-        require(targetTotalSupply == boringVault.balanceOf(address(target)), "BAL");
+        require(targetTotalSupply == oriusVault.balanceOf(address(target)), "BAL");
 
         // Make sure share price matches with a +- 1 wei difference.
         uint256 currentTotalAssets = target.totalAssets();

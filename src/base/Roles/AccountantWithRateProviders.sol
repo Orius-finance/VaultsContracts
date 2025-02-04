@@ -5,7 +5,7 @@ import {FixedPointMathLib} from "@solmate/utils/FixedPointMathLib.sol";
 import {IRateProvider} from "src/interfaces/IRateProvider.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {BoringVault} from "src/base/BoringVault.sol";
+import {OriusVault} from "src/base/OriusVault.sol";
 import {Auth, Authority} from "@solmate/auth/Auth.sol";
 import {IPausable} from "src/interfaces/IPausable.sol";
 
@@ -17,7 +17,7 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
 
     /**
      * @param payoutAddress the address `claimFees` sends fees to
-     * @param highwaterMark the highest value of the BoringVault's share price
+     * @param highwaterMark the highest value of the OriusVault's share price
      * @param feesOwedInBase total pending fees owed in terms of base
      * @param totalSharesLastUpdate total amount of shares the last exchange rate update
      * @param exchangeRate the current exchange rate in terms of base
@@ -74,7 +74,7 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     error AccountantWithRateProviders__PerformanceFeeTooLarge();
     error AccountantWithRateProviders__Paused();
     error AccountantWithRateProviders__ZeroFeesOwed();
-    error AccountantWithRateProviders__OnlyCallableByBoringVault();
+    error AccountantWithRateProviders__OnlyCallableByOriusVault();
     error AccountantWithRateProviders__UpdateDelayTooLarge();
     error AccountantWithRateProviders__ExchangeRateAboveHighwaterMark();
 
@@ -106,13 +106,13 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     uint8 public immutable decimals;
 
     /**
-     * @notice The BoringVault this accountant is working with.
+     * @notice The OriusVault this accountant is working with.
      *         Used to determine share supply for fee calculation.
      */
-    BoringVault public immutable vault;
+    OriusVault public immutable vault;
 
     /**
-     * @notice One share of the BoringVault.
+     * @notice One share of the OriusVault.
      */
     uint256 internal immutable ONE_SHARE;
 
@@ -130,7 +130,7 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     ) Auth(_owner, Authority(address(0))) {
         base = ERC20(_base);
         decimals = ERC20(_base).decimals();
-        vault = BoringVault(payable(_vault));
+        vault = OriusVault(payable(_vault));
         ONE_SHARE = 10 ** vault.decimals();
         accountantState = AccountantState({
             payoutAddress: payoutAddress,
@@ -303,12 +303,12 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
 
     /**
      * @notice Claim pending fees.
-     * @dev This function must be called by the BoringVault.
+     * @dev This function must be called by the OriusVault.
      * @dev This function will lose precision if the exchange rate
      *      decimals is greater than the feeAsset's decimals.
      */
     function claimFees(ERC20 feeAsset) external {
-        if (msg.sender != address(vault)) revert AccountantWithRateProviders__OnlyCallableByBoringVault();
+        if (msg.sender != address(vault)) revert AccountantWithRateProviders__OnlyCallableByOriusVault();
 
         AccountantState storage state = accountantState;
         if (state.isPaused) revert AccountantWithRateProviders__Paused();
@@ -341,14 +341,14 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     // ========================================= VIEW FUNCTIONS =========================================
 
     /**
-     * @notice Get this BoringVault's current rate in the base.
+     * @notice Get this OriusVault's current rate in the base.
      */
     function getRate() public view returns (uint256 rate) {
         rate = accountantState.exchangeRate;
     }
 
     /**
-     * @notice Get this BoringVault's current rate in the base.
+     * @notice Get this OriusVault's current rate in the base.
      * @dev Revert if paused.
      */
     function getRateSafe() external view returns (uint256 rate) {
@@ -357,7 +357,7 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     }
 
     /**
-     * @notice Get this BoringVault's current rate in the provided quote.
+     * @notice Get this OriusVault's current rate in the provided quote.
      * @dev `quote` must have its RateProviderData set, else this will revert.
      * @dev This function will lose precision if the exchange rate
      *      decimals is greater than the quote's decimals.
@@ -380,7 +380,7 @@ contract AccountantWithRateProviders is Auth, IRateProvider, IPausable {
     }
 
     /**
-     * @notice Get this BoringVault's current rate in the provided quote.
+     * @notice Get this OriusVault's current rate in the provided quote.
      * @dev `quote` must have its RateProviderData set, else this will revert.
      * @dev Revert if paused.
      */
